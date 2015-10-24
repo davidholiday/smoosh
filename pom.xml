@@ -118,6 +118,12 @@
         <version>4.0.2</version>
     </dependency>
 
+    <dependency>
+    	<groupId>de.codecentric</groupId>
+    	<artifactId>jbehave-junit-runner</artifactId>
+    	<version>1.2.0</version>
+    </dependency>
+
   </dependencies>
 
 
