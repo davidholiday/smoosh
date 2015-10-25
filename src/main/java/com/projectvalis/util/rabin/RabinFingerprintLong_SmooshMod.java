@@ -1,5 +1,9 @@
 package com.projectvalis.util.rabin;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.rabinfingerprint.fingerprint.RabinFingerprintLong;
 import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
@@ -34,43 +38,49 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	public void pushBytes(final byte[] bytes) {
 		int countI = 0;
 
-		LOGGER.info("PUSH TABLE IS: \n");
-		for (int i = 0; i < pushTable.length; i++) {
-			LOGGER.info(String.format("%X", i) + " "
-					+ String.format("%X", pushTable[i]));
-		}
+//		LOGGER.info("PUSH TABLE IS: \n");
+//		for (int i = 0; i < pushTable.length; i++) {
+//			LOGGER.info(String.format("%X", i) + " "
+//					+ String.format("%X", pushTable[i]));
+//		}
 
 		for (byte b : bytes) {
-			LOGGER.info("FINGERPRINT WAS: " + String.format("%X", fingerprint));
-
-			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
+//			LOGGER.info("FINGERPRINT WAS: " + String.format("%X", fingerprint));
+//
+//			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-			LOGGER.info("pushTable index and value are: "
-					+ String.format("%X", j) + " "
-					+ String.format("%X", pushTable[j]));
+//			LOGGER.info("pushTable index and value are: "
+//					+ String.format("%X", j) + " "
+//					+ String.format("%X", pushTable[j]));
 
-			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
-					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
+//			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
+//					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-			LOGGER.info("FINGERPRINT IS NOW: "
-					+ String.format("%X", fingerprint) + "\n");
+//			LOGGER.info("FINGERPRINT IS NOW: "
+//					+ String.format("%X", fingerprint) + "\n");
 
 			countI = (countI < this.pushTable.length - 1) ? (countI += 1) : (0);
 		}
 	}
 
+	
+
 	/**
-	 * gives access to the contents of the current push table
 	 * 
-	 * @param index
 	 * @return
 	 */
-	public long getPushTableByteAt(int index) {
-		return pushTable[index];
+	public List<Long> getPushTableAsList() {
+		List<Long> polynomialL = new ArrayList<Long>();	
+		for (long l : pushTable) { polynomialL.add(l); }
+		return polynomialL;
 	}
+	
 
 }
+
+
+

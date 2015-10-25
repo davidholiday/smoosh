@@ -1,8 +1,13 @@
 package com.projectvalis.reverse_rabin;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import junit.framework.Assert;
 
@@ -33,6 +38,8 @@ public class ReverseRabinSteps extends Steps {
 	private Polynomial rabinPolynomial;
 	private RabinFingerprintLong_SmooshMod fingerprinter;
 	
+	private List<Long> xordFingerprintAL;
+	private List<Long> appendedXordFingerprintAL;
 	
 	
 	@BeforeScenario
@@ -60,12 +67,64 @@ public class ReverseRabinSteps extends Steps {
 	}
 	
 	
+	
 	@When("the byte array is fingerprinted")
 	public void fingerPrintByteArray() {
 		fingerprinter.pushBytes(generatedByteARR);
 	}
 	
+
+
 	
+	@Then("the correct eight bits is appended to the head of the fingerprint "
+			+ "such that\n the first [n] bits in the result are equal to the "
+			+ "push table index used to \n generate the result.")
+	public void checkAppendedBits() {
+		
+		for (int i = 0; i < appendedXordFingerprintAL.size(); i ++) {
+			
+			String indexBinaryS = Integer.toBinaryString(i);
+			
+			while (indexBinaryS.length() < 8) { 
+				indexBinaryS = "0" + indexBinaryS; }
+			
+			Long currentFingerprintL = appendedXordFingerprintAL.get(i);
+			
+			String appendedHeadBits_S = 
+					Long.toBinaryString(currentFingerprintL);
+			
+			appendedHeadBits_S = appendedHeadBits_S.substring(0, 8);
+			LOGGER.info(appendedHeadBits_S + " " + appendedHeadBits_S.length());
+			Assert.assertTrue(appendedHeadBits_S.length() == 8);
+			LOGGER.info(indexBinaryS + " " + appendedHeadBits_S);
+			Assert.assertTrue(indexBinaryS.contentEquals(appendedHeadBits_S));
+		}
+		
+	}
+	
+	
+	
+	
+	@When("the fingerprinted array is xor'd against every entry "
+			+ "in the push table")
+	public void xorFingerprintAll() {
+		long fingerprintL = fingerprinter.getFingerprintLong();
+		List<Long> polynomialL = fingerprinter.getPushTableAsList();
+		
+		xordFingerprintAL = polynomialL.parallelStream()
+												 .map(x -> x ^ fingerprintL)
+												 .collect(Collectors.toList());
+
+		appendedXordFingerprintAL = 
+				IntStream.range(0, xordFingerprintAL.size())
+					.mapToObj(i -> appendByteToHead(i, xordFingerprintAL.get(i)))
+					.collect(Collectors.toList());
+			
+	}
+	
+
+	
+
 	
 	
 	@Then("it is possible to retrieve $retrieveNumI of the original "
@@ -112,6 +171,60 @@ public class ReverseRabinSteps extends Steps {
 		  }
 		  return result;
 	}
+	
+	
+	/**
+	 * 
+	 * @param listIndex
+	 * @param xordFingerprint
+	 * @return
+	 */
+	public long appendByteToHead(int listIndex, long xordFingerprint) {
+//		String listIndexBinaryS = Integer.toBinaryString(listIndex);
+//		
+//		if (listIndexBinaryS.length() > 8) {
+//			listIndexBinaryS = listIndexBinaryS.substring(0, 8);
+//		}
+//		
+//		while (listIndexBinaryS.length() < 8) { 
+//			listIndexBinaryS = 0 + listIndexBinaryS; 
+//		}
+//LOGGER.info("listIndexBinaryS is: " + listIndexBinaryS);	
+//		String xordFingerprintBinaryS = Long.toBinaryString(xordFingerprint);
+//		String appendedBinaryS = listIndexBinaryS + xordFingerprintBinaryS;
+//		
+//		long returnValL = 
+//				(appendedBinaryS.length() > 64) ? (-1) : 
+//					(Long.parseLong(appendedBinaryS, 2));
+//LOGGER.info("returnVal is: " + returnValL + " fingerprint is: " + xordFingerprint);
+//		return returnValL;
+		
+	
+LOGGER.info("xordFingerprint was: " + xordFingerprint);
+//LOGGER.info("xordFingerprint was: " + Long.toBinaryString(xordFingerprint));
+		int shiftI = Long.toBinaryString(xordFingerprint).length();
+		listIndex = (listIndex & 0xFF) << shiftI;
+//LOGGER.info("shiftI and listIndex are: " + shiftI + " " + Long.toBinaryString(listIndex));
+LOGGER.info("xordFingerprint is:  " + (((listIndex & 0xFF) << shiftI )| xordFingerprint));
+		return ( ((listIndex & 0xFF) << shiftI ) | xordFingerprint);
+		
+		
+		/*
+		 * 
+		 * this guy has to return a byte array so the leading zeros don't get
+		 * swallowed up.
+		 * 
+		 * 
+		 * 
+		 * 
+		 */
+		
+		
+		
+	}
+	
+	
+	
 	
 	
 }
