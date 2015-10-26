@@ -14,7 +14,7 @@ When the byte array is fingerprinted
 And the fingerprinted array is xor'd against every entry in the push table
 Then the correct eight bits is appended to the head of the fingerprint such that
 the first [n] bits in the result are equal to the push table index used to 
-generate the result. 
+generate the result.
 
 
 Scenario: Create a data structure containing all possible solutions

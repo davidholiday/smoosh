@@ -41,6 +41,7 @@ public class ReverseRabinSteps extends Steps {
 	private List<Long> xordFingerprintAL;
 	private List<Long> appendedXordFingerprintAL;
 	
+	private long[][] allXorPossibilities;
 	
 	@BeforeScenario
 	public void setup() {
@@ -50,6 +51,10 @@ public class ReverseRabinSteps extends Steps {
 		LOGGER.info(
 				"GENERATED POLYNOMIAL IS: " + rabinPolynomial.toHexString());	
 	}
+	
+	
+	
+	
 	
 	
 	
@@ -68,6 +73,42 @@ public class ReverseRabinSteps extends Steps {
 	
 	
 	
+	
+	
+	
+	
+	@Then("a data structure is created containing all 10,384 possible "
+			+ "sets of input")
+	public void generateAllSets() {
+		allXorPossibilities = new long[512][8];
+		
+		long fingerprintL = fingerprinter.getFingerprintLong();
+		List<Long> polynomialAL = fingerprinter.getPushTableAsList();
+		
+		for (int i = 0; i < polynomialAL.size(); i ++) {
+			long polynomial_L = polynomialAL.get(i);
+			
+			allXorPossibilities[i][0] = 
+					rollbackFingerprintFirst(polynomial_L, fingerprintL, i);
+			
+			for (int k = 1; k < 8; k++) {
+				allXorPossibilities[i][k] = 
+						allXorPossibilities[i][0] ^ polynomialAL.get(k);
+			}
+			
+		}
+				
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@When("the byte array is fingerprinted")
 	public void fingerPrintByteArray() {
 		fingerprinter.pushBytes(generatedByteARR);
@@ -75,6 +116,14 @@ public class ReverseRabinSteps extends Steps {
 	
 
 
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	@Then("the correct eight bits is appended to the head of the fingerprint "
 			+ "such that\n the first [n] bits in the result are equal to the "
@@ -93,8 +142,8 @@ public class ReverseRabinSteps extends Steps {
 			
 			int currentFingerprintHeadI = 
 					(int)((currentFingerprintL >> 45) & 0x1FF);
-LOGGER.info("current fingerprint: " + Long.toBinaryString(currentFingerprintL));	
-LOGGER.info("current fingerprint head 8bits are: " + currentFingerprintHeadI);
+//LOGGER.info("current fingerprint: " + Long.toBinaryString(currentFingerprintL));	
+//LOGGER.info("current fingerprint head 8bits are: " + currentFingerprintHeadI);
 			Assert.assertTrue("BITS AT HEAD OF APPENDED LIST NOT CORRECT! " + 
 					"EXPECTED: " + i + " GOT: " + currentFingerprintHeadI,
 					i == currentFingerprintHeadI);
@@ -115,6 +164,9 @@ LOGGER.info("current fingerprint head 8bits are: " + currentFingerprintHeadI);
 	
 	
 	
+	
+	
+	
 	@When("the fingerprinted array is xor'd against every entry "
 			+ "in the push table")
 	public void xorFingerprintAll() {
@@ -131,9 +183,9 @@ LOGGER.info("current fingerprint head 8bits are: " + currentFingerprintHeadI);
 		
 		for (int i = 0; i < polynomialAL.size(); i ++) {
 			long xordFingerprintL = polynomialAL.get(i) ^ fingerprintL;
-LOGGER.info("fingerprint and xord fingerprint are: " + fingerprintL + " " + xordFingerprintL);
+//LOGGER.info("fingerprint and xord fingerprint are: " + fingerprintL + " " + xordFingerprintL);
 			xordFingerprintL = removeTailByte(xordFingerprintL);
-LOGGER.info("de-tailed xord fingerprint is: " + xordFingerprintL);
+//LOGGER.info("de-tailed xord fingerprint is: " + xordFingerprintL);
 			xordFingerprintAL.add(xordFingerprintL);
 			
 			long appendedXordFingerprintL = appendByteToHead(i, xordFingerprintAL.get(i));
@@ -154,26 +206,50 @@ LOGGER.info("de-tailed xord fingerprint is: " + xordFingerprintL);
 
 	
 	
-	@Then("it is possible to retrieve $retrieveNumI of the original "
-			+ "$numBytesI bytes")
-	public void retrieveBytes(@Named("retrieveNumI") int retrieveNumI,
-							  @Named("numBytesI") int numBytesI) {
-		
+	@Then("the original 8 bytes is retrieved from the fingerprint.")
+	public void retrieveBytes() {	
+		boolean matchFoundB = false;
 		long fingerprintL = fingerprinter.getFingerprintLong();
-		
-		byte[] fingerprintByteARR = 
-				ByteBuffer.allocate(8).putLong(fingerprintL).array();
-		
-		byte[] invertedfingerprintByteARR = new byte[retrieveNumI];
-		
-		for (int i = 0; i < retrieveNumI; i++) {
-			byte invertedB = fingerprintByteARR[i];
+LOGGER.info("fingerprintL was: " + fingerprintL);
+		generateAllSets();
 
+		for (int i = 0; i < 512; i ++) {
+			
+			for (int k = 0; k < 8; k ++) {
+				fingerprinter.reset();
+				long answerCandidateL = allXorPossibilities[i][k];
+LOGGER.info("answerCandidateL is: " + answerCandidateL);		
+				byte[] answerCandidateByteARR = 
+						ByteBuffer.allocate(Long.SIZE / Byte.SIZE).
+							putLong(answerCandidateL).array();
+LOGGER.info("answerCandidateL is in hex: " + getHexString(answerCandidateByteARR));			
+				fingerprinter.pushBytes(answerCandidateByteARR);
+LOGGER.info("current and original fingerprint are: " + fingerprinter.getFingerprintLong() + " " + fingerprintL);
+				if (fingerprinter.getFingerprintLong() == fingerprintL) {
+					
+					Assert.assertFalse(
+							"SECOND MATCH FOUND WHEN THERE SHOULD "
+							+ "BE ONLY ONE!", matchFoundB);
+					
+					matchFoundB = true;
+LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(generatedByteARR) + " " + Arrays.toString(answerCandidateByteARR));
+					for (int moo = 0;
+							moo < answerCandidateByteARR.length; moo ++) {
+				
+						Assert.assertTrue(
+							"FINGERPRINTS MATCH FOR NON-MATCHING BYTE ARRAYS!", 
+								answerCandidateByteARR[moo] == 
+									generatedByteARR[moo]);
+					}
+					
+				}	
+				
+			}
+			
 		}
-	
 		
-		Assert.assertTrue("INVERSION FAILED!", 
-				Arrays.equals(generatedByteARR, invertedfingerprintByteARR));
+		Assert.assertTrue(
+			"NO MATCHING BYTE ARRAY FOUND FOR GIVEN FINGERPRINT!", matchFoundB);
 		
 	}
 	
@@ -204,6 +280,12 @@ LOGGER.info("de-tailed xord fingerprint is: " + xordFingerprintL);
 	public long removeTailByte(long xordFingerprint) {
 		return xordFingerprint >> 8;
 	}
+	
+	
+	public long getTailByte(long xordFingerprint) {
+		return 0x00000000000000FF & xordFingerprint;
+	}
+	
 	
 	
 	
@@ -242,6 +324,17 @@ LOGGER.info("de-tailed xord fingerprint is: " + xordFingerprintL);
 	}
 	
 	
+	
+	public long rollbackFingerprintFirst(long polynomial, long fingerprint, int xorIndex) {
+		long xordFingerprintL = polynomial ^ fingerprint;
+//LOGGER.info("xordFingerprintL was: " + xordFingerprintL);
+		long tailByteL = getTailByte(xordFingerprintL);
+//LOGGER.info("tailByteL was: " + tailByteL);
+		xordFingerprintL = removeTailByte(xordFingerprintL);			
+		long appendedXordFingerprintL = appendByteToHead(xorIndex, xordFingerprintL);
+//LOGGER.info("returning " + ((appendedXordFingerprintL << 8) | (tailByteL & 0xFF)));
+		return (appendedXordFingerprintL << 8) | (tailByteL & 0xFF);
+	}
 	
 	
 	
