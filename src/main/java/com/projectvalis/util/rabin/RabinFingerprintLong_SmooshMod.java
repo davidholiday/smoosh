@@ -45,23 +45,23 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 //		}
 
 		for (byte b : bytes) {
-//			LOGGER.info("FINGERPRINT WAS: " + String.format("%X", fingerprint));
-//
-//			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
+			LOGGER.info("FINGERPRINT WAS: " + String.format("%X", fingerprint));
+
+			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-//			LOGGER.info("pushTable index and value are: "
-//					+ String.format("%X", j) + " "
-//					+ String.format("%X", pushTable[j]));
+			LOGGER.info("pushTable index and value are: "
+					+ String.format("%X", j) + " "
+					+ String.format("%X", pushTable[j]));
 
-//			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
-//					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
+			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
+					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-//			LOGGER.info("FINGERPRINT IS NOW: "
-//					+ String.format("%X", fingerprint) + "\n");
+			LOGGER.info("FINGERPRINT IS NOW: "
+					+ String.format("%X", fingerprint) + "\n");
 
 			countI = (countI < this.pushTable.length - 1) ? (countI += 1) : (0);
 		}

@@ -41,7 +41,8 @@ public class ReverseRabinSteps extends Steps {
 	private List<Long> xordFingerprintAL;
 	private List<Long> appendedXordFingerprintAL;
 	
-	private long[][] allXorPossibilities;
+//	private long[][] allXorPossibilities;
+	private List<Long> allXorPossibilitiesAL;
 	
 	@BeforeScenario
 	public void setup() {
@@ -80,23 +81,52 @@ public class ReverseRabinSteps extends Steps {
 	@Then("a data structure is created containing all 10,384 possible "
 			+ "sets of input")
 	public void generateAllSets() {
-		allXorPossibilities = new long[512][8];
-		
+		allXorPossibilitiesAL = new ArrayList<Long>();
 		long fingerprintL = fingerprinter.getFingerprintLong();
 		List<Long> polynomialAL = fingerprinter.getPushTableAsList();
 		
 		for (int i = 0; i < polynomialAL.size(); i ++) {
 			long polynomial_L = polynomialAL.get(i);
-			
-			allXorPossibilities[i][0] = 
+LOGGER.info("polynomial and index are: " + String.format("%X", polynomial_L) + " " + i);		
+			List<Long> rolledBackFingerprintAL = 
 					rollbackFingerprintFirst(polynomial_L, fingerprintL, i);
 			
-			for (int k = 1; k < 8; k++) {
-				allXorPossibilities[i][k] = 
-						allXorPossibilities[i][0] ^ polynomialAL.get(k);
-			}
-			
+			long tailByteL = rolledBackFingerprintAL.get(1);
+LOGGER.info("rollback result was: " + String.format("%X", rolledBackFingerprintAL.get(0)) 
+		+ " " + String.format("%X", rolledBackFingerprintAL.get(1)) );
+
+		
+			allXorPossibilitiesAL.addAll(
+					rollbackFingerprintSecond(rolledBackFingerprintAL));
 		}
+		
+		
+		
+		
+//		allXorPossibilities = new long[512][8];
+//		
+//		long fingerprintL = fingerprinter.getFingerprintLong();
+//		List<Long> polynomialAL = fingerprinter.getPushTableAsList();
+//		
+//		for (int i = 0; i < /*polynomialAL.size()*/10; i ++) {
+//			long polynomial_L = polynomialAL.get(i);
+//			
+//			allXorPossibilities[i][0] = 
+//					rollbackFingerprintFirst(polynomial_L, fingerprintL, i);
+//LOGGER.info("rollback fingerprint and result was: " + String.format("%X", fingerprintL) + 
+//		" " + String.format("%X", allXorPossibilities[i][0]));
+//
+//LOGGER.info("xord against: " + String.format("%X", polynomial_L));
+//
+//			for (int k = 1; k < 8; k++) {
+//				allXorPossibilities[i][k] = 
+//						allXorPossibilities[i][0] ^ polynomialAL.get(k);
+//LOGGER.info("second xor at index: " + i + "/" + k + " is: " + 
+//						String.format("%X", allXorPossibilities[i][k]) + 
+//						" pushtable val was: " + String.format("%X", polynomialAL.get(k)));
+//			}
+//			
+//		}
 				
 	}
 	
@@ -208,45 +238,59 @@ public class ReverseRabinSteps extends Steps {
 	
 	@Then("the original 8 bytes is retrieved from the fingerprint.")
 	public void retrieveBytes() {	
+		int matchCountI = 0;
 		boolean matchFoundB = false;
 		long fingerprintL = fingerprinter.getFingerprintLong();
 LOGGER.info("fingerprintL was: " + fingerprintL);
 		generateAllSets();
 
-		for (int i = 0; i < 512; i ++) {
+		for (int i = 0; i < allXorPossibilitiesAL.size(); i ++) {
+			fingerprinter.reset();
+			long answerCandidateL = allXorPossibilitiesAL.get(i);
 			
-			for (int k = 0; k < 8; k ++) {
-				fingerprinter.reset();
-				long answerCandidateL = allXorPossibilities[i][k];
-LOGGER.info("answerCandidateL is: " + answerCandidateL);		
-				byte[] answerCandidateByteARR = 
-						ByteBuffer.allocate(Long.SIZE / Byte.SIZE).
-							putLong(answerCandidateL).array();
-LOGGER.info("answerCandidateL is in hex: " + getHexString(answerCandidateByteARR));			
-				fingerprinter.pushBytes(answerCandidateByteARR);
+LOGGER.info("answerCandidateL is: " + answerCandidateL);	
+			
+			byte[] answerCandidateByteARR = 
+					ByteBuffer.allocate(Long.SIZE / Byte.SIZE).
+						putLong(answerCandidateL).array();		
+
+LOGGER.info("answerCandidateL is in hex: " + getHexString(answerCandidateByteARR).toUpperCase());	
+			fingerprinter.pushBytes(answerCandidateByteARR);
 LOGGER.info("current and original fingerprint are: " + fingerprinter.getFingerprintLong() + " " + fingerprintL);
-				if (fingerprinter.getFingerprintLong() == fingerprintL) {
-					
-					Assert.assertFalse(
-							"SECOND MATCH FOUND WHEN THERE SHOULD "
-							+ "BE ONLY ONE!", matchFoundB);
-					
-					matchFoundB = true;
+			if (fingerprinter.getFingerprintLong() == fingerprintL) {
+				matchFoundB = true;
+				matchCountI++;
+				
+//				Assert.assertFalse(
+//						"SECOND MATCH FOUND WHEN THERE SHOULD "
+//						+ "BE ONLY ONE!", matchFoundB);
+//				
+//				matchFoundB = true;
+LOGGER.info("**************************************************");
+fingerprinter.reset();
+fingerprinter.pushBytes(generatedByteARR);
+LOGGER.info(fingerprinter.getFingerprintLong() + " ");
+
+fingerprinter.reset();
+fingerprinter.pushBytes(answerCandidateByteARR);
+LOGGER.info(fingerprinter.getFingerprintLong() + " ");
+LOGGER.info("**************************************************");
+
 LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(generatedByteARR) + " " + Arrays.toString(answerCandidateByteARR));
-					for (int moo = 0;
-							moo < answerCandidateByteARR.length; moo ++) {
+//				for (int moo = 0;
+//						moo < answerCandidateByteARR.length; moo ++) {
+//			
+//					Assert.assertTrue(
+//						"FINGERPRINTS MATCH FOR NON-MATCHING BYTE ARRAYS!", 
+//							answerCandidateByteARR[moo] == 
+//								generatedByteARR[moo]);
+//				}
 				
-						Assert.assertTrue(
-							"FINGERPRINTS MATCH FOR NON-MATCHING BYTE ARRAYS!", 
-								answerCandidateByteARR[moo] == 
-									generatedByteARR[moo]);
-					}
-					
-				}	
-				
-			}
+			}				
 			
 		}
+		
+		LOGGER.info("match count is: " + matchCountI);
 		
 		Assert.assertTrue(
 			"NO MATCHING BYTE ARRAY FOUND FOR GIVEN FINGERPRINT!", matchFoundB);
@@ -324,8 +368,16 @@ LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(
 	}
 	
 	
-	
-	public long rollbackFingerprintFirst(long polynomial, long fingerprint, int xorIndex) {
+	/**
+	 * returns list{rolled back fingerprint, tail byte appended to rolled 
+	 * back fingerprint}
+	 * 
+	 * @param polynomial
+	 * @param fingerprint
+	 * @param xorIndex
+	 * @return
+	 */
+	public List<Long> rollbackFingerprintFirst(long polynomial, long fingerprint, int xorIndex) {
 		long xordFingerprintL = polynomial ^ fingerprint;
 //LOGGER.info("xordFingerprintL was: " + xordFingerprintL);
 		long tailByteL = getTailByte(xordFingerprintL);
@@ -333,7 +385,37 @@ LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(
 		xordFingerprintL = removeTailByte(xordFingerprintL);			
 		long appendedXordFingerprintL = appendByteToHead(xorIndex, xordFingerprintL);
 //LOGGER.info("returning " + ((appendedXordFingerprintL << 8) | (tailByteL & 0xFF)));
-		return (appendedXordFingerprintL << 8) | (tailByteL & 0xFF);
+		//return (appendedXordFingerprintL << 8) | (tailByteL & 0xFF);
+		
+		List<Long> returnAL = new ArrayList<Long>();
+		returnAL.add(appendedXordFingerprintL);
+		returnAL.add(tailByteL);
+		return returnAL;
+	}
+	
+
+	
+	
+	public List<Long> rollbackFingerprintSecond(List<Long> resultFromFirstRollbackAL) {
+		long fingerprintL = resultFromFirstRollbackAL.get(0);
+		long tailByteL = resultFromFirstRollbackAL.get(1);
+		
+		List<Long> returnAL = new ArrayList<Long>();
+		
+		for (int i = 0; i < 8; i ++) {
+			List<Long> polynomialAL = fingerprinter.getPushTableAsList();
+			long polynomialL = polynomialAL.get(i);
+			long xordFingerprintL = polynomialL ^ fingerprintL;
+			
+			if (i == (int)xordFingerprintL >> 53) { 
+				long validCandidateL = 
+						(xordFingerprintL << 8) | (tailByteL & 0xFF);
+				returnAL.add(validCandidateL);
+			}
+					
+		}
+		
+		return returnAL;		
 	}
 	
 	
