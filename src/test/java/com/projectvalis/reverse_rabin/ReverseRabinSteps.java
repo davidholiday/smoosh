@@ -87,13 +87,13 @@ public class ReverseRabinSteps extends Steps {
 		
 		for (int i = 0; i < polynomialAL.size(); i ++) {
 			long polynomial_L = polynomialAL.get(i);
-LOGGER.info("polynomial and index are: " + String.format("%X", polynomial_L) + " " + i);		
+//LOGGER.info("polynomial and index are: " + String.format("%X", polynomial_L) + " " + i);		
 			List<Long> rolledBackFingerprintAL = 
 					rollbackFingerprintFirst(polynomial_L, fingerprintL, i);
 			
 			long tailByteL = rolledBackFingerprintAL.get(1);
-LOGGER.info("rollback result was: " + String.format("%X", rolledBackFingerprintAL.get(0)) 
-		+ " " + String.format("%X", rolledBackFingerprintAL.get(1)) );
+//LOGGER.info("rollback result was: " + String.format("%X", rolledBackFingerprintAL.get(0)) 
+//		+ " " + String.format("%X", rolledBackFingerprintAL.get(1)) );
 
 		
 			allXorPossibilitiesAL.addAll(
@@ -258,7 +258,7 @@ LOGGER.info("answerCandidateL is in hex: " + getHexString(answerCandidateByteARR
 			fingerprinter.pushBytes(answerCandidateByteARR);
 LOGGER.info("current and original fingerprint are: " + fingerprinter.getFingerprintLong() + " " + fingerprintL);
 			if (fingerprinter.getFingerprintLong() == fingerprintL) {
-				matchFoundB = true;
+//				matchFoundB = true;
 				matchCountI++;
 				
 //				Assert.assertFalse(
@@ -273,10 +273,27 @@ LOGGER.info(fingerprinter.getFingerprintLong() + " ");
 
 fingerprinter.reset();
 fingerprinter.pushBytes(answerCandidateByteARR);
-LOGGER.info(fingerprinter.getFingerprintLong() + " ");
+LOGGER.info(fingerprinter.getFingerprintLong() + "\n");
+
+LOGGER.info("original and answer candidate byte arrays are: " + 
+		Arrays.toString(generatedByteARR) + " " + Arrays.toString(answerCandidateByteARR));
 LOGGER.info("**************************************************");
 
-LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(generatedByteARR) + " " + Arrays.toString(answerCandidateByteARR));
+
+				if (!matchFoundB) {
+					boolean tempMatchB = true;
+					
+					for (int k = 0; k < answerCandidateByteARR.length; k ++) {
+						if (answerCandidateByteARR[k] != generatedByteARR[k]) {
+							tempMatchB = false;
+							break;
+						}
+					}
+					
+					matchFoundB = tempMatchB;
+					
+				}
+
 //				for (int moo = 0;
 //						moo < answerCandidateByteARR.length; moo ++) {
 //			
@@ -390,24 +407,69 @@ LOGGER.info("original and answer candidate byte arrays are: " + Arrays.toString(
 		List<Long> returnAL = new ArrayList<Long>();
 		returnAL.add(appendedXordFingerprintL);
 		returnAL.add(tailByteL);
+		returnAL.add((long)xorIndex);
 		return returnAL;
 	}
 	
 
 	
-	
+
 	public List<Long> rollbackFingerprintSecond(List<Long> resultFromFirstRollbackAL) {
 		long fingerprintL = resultFromFirstRollbackAL.get(0);
 		long tailByteL = resultFromFirstRollbackAL.get(1);
 		
 		List<Long> returnAL = new ArrayList<Long>();
+
+		
+		//
+		// this yields ~511 results, the correct answer usually not among them
+		// 
+		//
+// 
+		// doesn't work
+//		String xorIndexFirstS = 
+//				Long.toBinaryString(resultFromFirstRollbackAL.get(2));
+//		
+//		while (xorIndexFirstS.length() < 3) {
+//			xorIndexFirstS = "0" + xorIndexFirstS;
+//		}
+//		
+//		int xorIndexSecondI = Integer.parseInt(xorIndexFirstS.substring(0, 3), 2);
+		
+		
+		// neither does this
+//		long firstXorIndexValL = resultFromFirstRollbackAL.get(2);
+//		String firstXorIndexValS = Long.toString(firstXorIndexValL);
+//		
+//		int xorIndexSecondI = Integer.parseInt(firstXorIndexValS) >> 5;
+//		List<Long> polynomialAL = fingerprinter.getPushTableAsList();
+//		long polynomialL = polynomialAL.get(xorIndexSecondI);
+//		long xordFingerprintL = polynomialL ^ fingerprintL;	
+//		long validCandidateL = 
+//				(xordFingerprintL << 8) | (tailByteL & 0xFF);
+//		returnAL.add(validCandidateL);
+//		
+		
+		
+		
+			//
+		    // this yields 2048 results -- the correct on is among them
+			//	
+		
 		
 		for (int i = 0; i < 8; i ++) {
 			List<Long> polynomialAL = fingerprinter.getPushTableAsList();
 			long polynomialL = polynomialAL.get(i);
-			long xordFingerprintL = polynomialL ^ fingerprintL;
+//LOGGER.info("second rollback on poly against fingerprint: " +
+//			String.format("%X", polynomialL) + " " + String.format("%X", fingerprintL));
+			long xordFingerprintL = polynomialL ^ fingerprintL;	
+		
 			
-			if (i == (int)xordFingerprintL >> 53) { 
+//LOGGER.info("rolled back fingerprint + tailbyte is: " + String.format("%X", xordFingerprintL));	
+//LOGGER.info(">> 53 against fingerprint + tailbyte: " + String.format("%X", xordFingerprintL) + 
+//		" is: " + (int)(xordFingerprintL >> 53));
+			
+			if (i == (int)(xordFingerprintL >> 53)) { 
 				long validCandidateL = 
 						(xordFingerprintL << 8) | (tailByteL & 0xFF);
 				returnAL.add(validCandidateL);
