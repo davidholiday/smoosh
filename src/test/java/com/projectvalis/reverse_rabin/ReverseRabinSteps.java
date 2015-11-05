@@ -45,7 +45,8 @@ public class ReverseRabinSteps extends Steps {
 		rabinPolynomial = Polynomial.createIrreducible(53);
 		fingerprinter = new RabinFingerprintLong_SmooshMod(rabinPolynomial);
 
-		LOGGER.info("GENERATED POLYNOMIAL IS: " + rabinPolynomial.toHexString());
+		LOGGER.info("GENERATED POLYNOMIAL IS: " +
+				rabinPolynomial.toHexString());
 	}
 	
 	
@@ -65,8 +66,7 @@ public class ReverseRabinSteps extends Steps {
 
 	
 	
-	@Then("a data structure is created containing all 10,384 possible "
-			+ "sets of input")
+	@Then("a data structure is created containing all possible sets of input.")
 	public void generateAllSets() {
 		allXorPossibilitiesAL = new ArrayList<Long>();
 		long fingerprintL = fingerprinter.getFingerprintLong();

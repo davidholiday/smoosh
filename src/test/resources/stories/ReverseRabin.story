@@ -20,14 +20,11 @@ generate the result.
 Scenario: Create a data structure containing all possible solutions
 Given an array of 8 bytes
 When the byte array is fingerprinted
-Then a data structure is created containing all 10,384 possible sets of input
-And there are no duplicates in the data structure
-And all of the possible solutions are of the correct length.
+Then a data structure is created containing all possible sets of input.
 
 
 
 Scenario: Fingerprint eight bytes then retrive the original eight bytes
 Given an array of 8 bytes
 When the byte array is fingerprinted
-Then the original 8 bytes is retrieved from the fingerprint. 
-
+Then the original 8 bytes is retrieved from the fingerprint.
