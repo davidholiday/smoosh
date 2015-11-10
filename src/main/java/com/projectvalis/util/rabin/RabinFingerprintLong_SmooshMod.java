@@ -9,6 +9,8 @@ import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.projectvalis.util.ByteManipulation;
+
 /**
  * extends the stock fingerprinting logic to make it easier to hook it into
  * smoosh
@@ -79,8 +81,89 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		return polynomialL;
 	}
 	
+	
+	
+	/**
+	 * assumes what's being passed is eight bytes fingerprinted. what's 
+	 * returned is, given a polynomial and an XOR table index, what the 
+	 * previous state of the fingerprint was (ie - when the first seven / eight
+	 * bytes were pushed).
+	 * 
+	 * returns 
+	 * 
+	 * @param polynomial
+	 * @param fingerprint
+	 * @param xorIndex
+	 * @return
+	 * 		LIST{rolled back fingerprint, tail byte appended to rolled back
+	 * fingerprint prior to XOR (the eighth byte pushed)}
+	 */
+	public List<Long> rollbackFingerprintFirst(long polynomial,
+			long fingerprint, int xorIndex) {
 
+		long xordFingerprintL = polynomial ^ fingerprint;
+		long tailByteL = ByteManipulation.getTailByte(xordFingerprintL);
+		xordFingerprintL = ByteManipulation.removeTailByte(xordFingerprintL);
+
+		long appendedXordFingerprintL = 
+				ByteManipulation.appendByteToHead(xorIndex, xordFingerprintL);
+
+		List<Long> returnAL = new ArrayList<Long>();
+		returnAL.add(appendedXordFingerprintL);
+		returnAL.add(tailByteL);
+		returnAL.add((long) xorIndex);
+		return returnAL;
+	}
+
+	
+	/**
+	 * assumes what's being passed is the result of a fingerprinted stream of
+	 * eight bytes being rolled back by rollbackFingerprintFirst. because only
+	 * eight bytes were pushed, what this method tries to figure out is what
+	 * the fingerprint looked like prior to the seventh byte being pushed. given
+	 * that only three bits could've been used to determine the XOR index value,
+	 * what's returned is a set of candidates where, after XOR against all 
+	 * possible XOR values with index values representable in three bits, the
+	 * first three bits are equal to the index of the XOR value used.
+	 * 
+	 * @param resultFromFirstRollbackAL
+	 * @return
+	 */
+	public List<Long> rollbackFingerprintSecond(
+			List<Long> resultFromFirstRollbackAL) {
+
+		long fingerprintL = resultFromFirstRollbackAL.get(0);
+		long tailByteL = resultFromFirstRollbackAL.get(1);
+		List<Long> returnAL = new ArrayList<Long>();
+
+		for (int i = 0; i < 8; i++) {
+			List<Long> polynomialAL = getPushTableAsList();
+			long polynomialL = polynomialAL.get(i);
+			long xordFingerprintL = polynomialL ^ fingerprintL;
+
+			if (i == (int) (xordFingerprintL >> 53)) {
+				
+				long validCandidateL = 
+						(xordFingerprintL << 8)| (tailByteL & 0xFF);
+				
+				returnAL.add(validCandidateL);
+			}
+
+		}
+
+		return returnAL;
+	}	
+
+	
+	
+	
+	
 }
+
+
+
+
+
 
 
 
