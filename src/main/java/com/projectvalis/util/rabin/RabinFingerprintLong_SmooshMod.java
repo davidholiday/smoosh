@@ -1,6 +1,7 @@
 package com.projectvalis.util.rabin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,6 +73,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	
 
 	/**
+	 * returns the push table array as a List<Long>
 	 * 
 	 * @return
 	 */
@@ -155,6 +157,94 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	}	
 
 	
+	
+	/**
+	 * method assumes you've followed the suggested method for choosing a
+	 * polynomial degree (53, 47, 31, 15, ...). 
+	 * 
+	 * @see RabinFingerprintLong for details.
+	 * 
+	 * @return byte array representation of fingerprint long. if the fingerprint
+	 * is 99AABBCCDDEEFF, the the returned array will be 
+	 * {99, AA, BB, CC, DD, EE, FF}
+	 */
+	public byte[] getFingerprintAsByteArray() {
+		int lengthI = (this.degree + 1) / 8;
+		byte[] returnARR = new byte[lengthI];
+		
+		String fingerprintHexS = getFingerprint().toHexString();
+		
+		if (fingerprintHexS.length() % 2 > 0) {
+			fingerprintHexS = "0" + fingerprintHexS;
+		}
+		
+		int toI = lengthI * 2;
+		int countI = 0;
+		
+		for (int i = 0; i < toI; i+=2) {
+			String byteHexS = fingerprintHexS.substring(i, i + 1);
+			returnARR[countI] = Byte.parseByte(byteHexS, 16);
+			countI += 1;
+		}
+		
+		return returnARR;
+	}
+	
+	
+	
+	/**
+	 * smooshes a block of sixteen bytes. 
+	 * 
+	 * @param bytesIn - a sixteen byte block of bytes
+	 * 
+	 * 
+	 * @return a fifteen byte array in the following form:
+	 * 
+	 * [0-6]: the first seven bytes in their original state
+	 * 
+	 * [7]: byte nine, which was at the head of the fingerprint when byte
+	 * sixteen was pushed, foring it to be shoved out the front of the chain.
+	 * 
+	 * [8-14]: the fingerprint of the sixteen byte block
+	 * 
+	 * TODO: experiment with returning 15 1/2 bytes instead of fifteen to 
+	 * provide some room for extra metadata as needed.
+	 */
+	public byte[] compress16(byte[] bytesIn) {
+		int returnArrIndexI = 0;
+		byte[] returnARR = new byte[15];
+		
+		for (int i = 0; i < 16; i ++) {
+			byte b = bytesIn[i];
+			int headByteI = (int) ((fingerprint >> shift) & 0x1FF);	
+			
+			fingerprint = 
+					((fingerprint << 8) | (b & 0xFF)) ^ pushTable[headByteI];
+			
+			// if we're in the first seven of the list throw them into the
+			// return array
+			if (i < 7) {
+				returnARR[returnArrIndexI]  = b;
+				returnArrIndexI++;
+			}
+			// else if we're on the sixteenth byte, grab the xord byte nine
+			// (aka the head of the fingerprint when byte sixteen was pushed)
+			// and eject.
+			else if (i == 15) {
+				returnARR[returnArrIndexI] = (byte) (headByteI & 0x0FF);
+				returnArrIndexI++;
+			}
+			
+		}
+
+		for (byte b: getFingerprintAsByteArray()) {
+			returnARR[returnArrIndexI] = b;
+			returnArrIndexI++;
+		}
+		
+		
+		return returnARR;
+	}
 	
 	
 	

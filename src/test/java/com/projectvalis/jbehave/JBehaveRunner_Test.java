@@ -17,6 +17,7 @@ import org.jbehave.core.steps.InstanceStepsFactory;
 import org.jbehave.core.steps.Steps;
 import org.junit.runner.RunWith;
 
+import com.projectvalis.reverse_rabin.DialecticCompressionSteps;
 import com.projectvalis.reverse_rabin.ReverseRabinSteps;
 
 import de.codecentric.jbehave.junit.monitoring.JUnitReportingRunner;
@@ -49,6 +50,7 @@ public class JBehaveRunner_Test extends JUnitStories {
     public InjectableStepsFactory stepsFactory() {
         ArrayList<Steps> stepFileList = new ArrayList<Steps>();
         stepFileList.add(new ReverseRabinSteps());
+        stepFileList.add(new DialecticCompressionSteps());
 
         return new InstanceStepsFactory(configuration(), stepFileList);       
     }
