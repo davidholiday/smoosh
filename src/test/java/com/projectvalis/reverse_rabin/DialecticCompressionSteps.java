@@ -70,10 +70,12 @@ public class DialecticCompressionSteps extends Steps {
 	
 	@Then("the retained fingerprint byte can be used to retrieve byte 16 and "
 			+ "the fingerprint representing bytes 1-15.")
-	public void foo() {
+	public void getByte16AndPreviousFingerprint() {
 		// create method that takes smoosh block and returns a byte array with
 		// [0] being byte 16 in original state
 		// [1] - [7] being the fingerprint for bytes [1-15]
+		
+		
 		Assert.fail("look here, fool!");
 	}
 	

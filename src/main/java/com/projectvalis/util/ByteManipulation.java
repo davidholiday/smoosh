@@ -1,5 +1,9 @@
 package com.projectvalis.util;
 
+import java.nio.ByteBuffer;
+
+import org.rabinfingerprint.fingerprint.RabinFingerprintLong;
+
 public class ByteManipulation {
 	
 	/**
@@ -80,5 +84,39 @@ public class ByteManipulation {
 
 	}
 	
+
+	/**
+	 * converts a long to a byte array. if the value
+	 * is 99AABBCCDDEEFF, the the returned array will be 
+	 * {99, AA, BB, CC, DD, EE, FF}
+	 * @param value
+	 * @return
+	 */
+	public static byte[] getLongAsByteArray(long value) {
+		return ByteBuffer
+				.allocate(Long.SIZE / Byte.SIZE)
+				.putLong(value)
+				.array();
+	}
+	
+	
+	/**
+	 * converts a byte array to a long
+	 * 
+	 * @param byteARR
+	 * @return
+	 */
+	public static long getByteArrayAsLong(byte[] byteARR) {
+		return ByteBuffer
+				.allocate(Long.SIZE / Byte.SIZE)
+				.put(byteARR)
+				.getLong();
+	}
+	
 	
 }
+
+
+
+
+

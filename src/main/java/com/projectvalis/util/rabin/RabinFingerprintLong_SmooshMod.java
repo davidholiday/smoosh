@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Assert;
 import org.rabinfingerprint.fingerprint.RabinFingerprintLong;
 import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
@@ -39,34 +40,27 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 */
 	@Override
 	public void pushBytes(final byte[] bytes) {
-		int countI = 0;
-
-//		LOGGER.info("PUSH TABLE IS: \n");
-//		for (int i = 0; i < pushTable.length; i++) {
-//			LOGGER.info(String.format("%X", i) + " "
-//					+ String.format("%X", pushTable[i]));
-//		}
 
 		for (byte b : bytes) {
-//			LOGGER.info("FINGERPRINT WAS: " + String.format("%X", fingerprint));
-//
-//			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
+			
+			LOGGER.trace("FINGERPRINT WAS: " + 
+					String.format("%X", fingerprint));
+
+			LOGGER.trace("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-//			LOGGER.info("pushTable index and value are: "
-//					+ String.format("%X", j) + " "
-//					+ String.format("%X", pushTable[j]));
-//
-//			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
-//					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
+			LOGGER.trace("pushTable index and value are: "
+					+ String.format("%X", j) + " "
+					+ String.format("%X", pushTable[j]));
+
+			LOGGER.trace("fingerprint pre-XOR, post shift/append is: "
+					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-//			LOGGER.info("FINGERPRINT IS NOW: "
-//					+ String.format("%X", fingerprint) + "\n");
-
-			countI = (countI < this.pushTable.length - 1) ? (countI += 1) : (0);
+			LOGGER.trace("FINGERPRINT IS NOW: "
+					+ String.format("%X", fingerprint) + "\n");
 		}
 	}
 
@@ -208,18 +202,24 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * [8-14]: the fingerprint of the sixteen byte block
 	 * 
 	 * TODO: experiment with returning 15 1/2 bytes instead of fifteen to 
-	 * provide some room for extra metadata as needed.
+	 * provide some room for extra metadata as needed. currently an assert is
+	 * in place ensuring the value of the xorIndex <= 8 bits. if that assert
+	 * ever pops, then we know we have to include at least the head bit of 
+	 * the xord byte 8 with what's returned so later we can ensure we've got the
+	 * correct XOR table index when we process byte 7.
 	 */
 	public byte[] compress16(byte[] bytesIn) {
 		int returnArrIndexI = 0;
 		byte[] returnARR = new byte[15];
+		long fingerprintLocalL = 0;
 		
 		for (int i = 0; i < 16; i ++) {
 			byte b = bytesIn[i];
-			int headByteI = (int) ((fingerprint >> shift) & 0x1FF);	
+			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);	
+			Assert.assertTrue("nine bit headbyte detected!", headByteI < 256);		
 			
-			fingerprint = 
-					((fingerprint << 8) | (b & 0xFF)) ^ pushTable[headByteI];
+			fingerprintLocalL = 
+				((fingerprintLocalL << 8) | (b & 0xFF)) ^ pushTable[headByteI];
 			
 			// if we're in the first seven of the list throw them into the
 			// return array
@@ -241,14 +241,130 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			returnARR[returnArrIndexI] = b;
 			returnArrIndexI++;
 		}
-		
-		
+				
 		return returnARR;
 	}
 	
 	
 	
+
+	
+	/**
+	 * takes an array containing the first seven bytes given as part of a 
+	 * smoosh block and returns an array containing all eight of the derived
+	 * XOR values that were applied to the fingerprint
+	 * 
+	 * @param firstSevenByteARR
+	 * @return
+	 */
+	public long[] getXorChain(byte[] firstSevenByteARR) {
+		long[] returnARR = new long[8];
+		long fingerprintLocalL = 0;
+		
+		for (int i = 0; i < 14; i ++) {
+			int headByteI = (int) ((fingerprint >> shift) & 0x1FF);	
+			byte appendedByte = (i < 7) ? (firstSevenByteARR[i]) : (0x00);
+			
+			fingerprintLocalL = 
+				((fingerprintLocalL << 8) | appendedByte) 
+					^ pushTable[headByteI];	
+			
+			// if we've just pushed byte seven or greater, then we've been
+			// xoring stuff and we need to track those values.
+			if (i > 5) { returnARR[i - 6] = pushTable[headByteI]; }
+		}
+			
+		return returnARR;	
+	}
+	
+	
+	
+	/**
+	 * takes a smoosh block and rolls back the fingerprint for bytes [1-16] 
+	 * to the fingerprint for bytes [1-15] and grabs the original state of byte
+	 * 16.
+	 * 
+	 * @param smooshBlock
+	 * @return byte[] = {fingerprint for bytes [1-15], original byte 16}
+	 */
+	public byte[] rollBack16(byte[] smooshBlock) {
+		byte[] returnARR = new byte[8];
+		byte xordByteNine = smooshBlock[7];
+		long xorValL = pushTable[xordByteNine];
+		
+		long fingerprint16L = 
+				ByteManipulation.getByteArrayAsLong(
+						Arrays.copyOfRange(smooshBlock, 8, 14));
+		
+		fingerprint16L = xorValL ^ fingerprint16L;
+		byte byte16 = (byte) (fingerprint16L & 0x000000000000FF);
+		long fingerprint15L = (xordByteNine << 54) | (fingerprint16L >> 8);
+		
+		byte[] fingerprint15ARR = 
+				ByteManipulation.getLongAsByteArray(fingerprint15L);
+				
+		for (int i = 0; i < fingerprint15ARR.length; i ++) { 
+			returnARR[i] = fingerprint15ARR[i]; 
+		}
+		
+		returnARR[7] = byte16;
+		return returnARR;
+	}	
+	
+	
+
+	
+	/**
+	 * applies the correct chain of xor operations against a given fingerprinted
+	 * byte. ensures the position in the fingerprint of byte [processedByte]
+	 * is taken into account when unrolling the chain of xor operations.
+	 * 
+	 * DON'T FORGET xorChainARR[0] REPRESENTS THE XOR VALUE USED WHEN
+	 * BYTE SEVEN WAS PUSHED! For your probable use case - you're going to want
+	 * to start at xorChainARR[2] given that it was at the head of the 
+	 * fingerprint when byte 9 was pushed.
+	 * 
+	 * @param startIndexI the index of the xorChainARR at which to start. eg: 
+	 * 'which byte was shifted off the head of the fingerprint when 
+	 * value [processedByte] was appended to the tail?
+	 * 
+	 * @param xorChainARR the values used to xor the fingerprint for bytes 1-14
+	 * 
+	 * @param processedByte a single fingerprinted byte
+	 * 
+	 * @return a mostly unprocessed byte (6/7 XORs are handled by this method)
+	 */
+	public byte applyXorChain(int startIndexI, 
+							  byte[] xorChainARR, 
+							  byte processedByte) {
+		
+		int countI = 8 - startIndexI;
+		int positionI = 7;
+		
+		for (int i = positionI; i < countI; i--) {
+			
+			byte[] xorValBytesARR = 
+				ByteManipulation.getLongAsByteArray(xorChainARR[startIndexI]);
+			
+			processedByte = (byte) (processedByte ^ xorValBytesARR[i]);
+			startIndexI++;
+		}
+		
+		return processedByte;
+	}
+	
+	
+	
 }
+
+
+
+
+
+
+
+
+
 
 
 
