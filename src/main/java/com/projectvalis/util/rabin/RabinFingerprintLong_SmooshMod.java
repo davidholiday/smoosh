@@ -305,18 +305,14 @@ LOGGER.info("HEAD BYTE AND XOR VALUE ARE: "
 		byte xordByteNine = smooshBlock[7];
 		long xorValL = pushTable[(int)xordByteNine & 0xFF];
 		
-LOGGER.info("xordByteNine and xor val are: " + Long.toHexString(xordByteNine) + " " 
-		+ Long.toHexString(xorValL));
+		LOGGER.trace("xordByteNine and xor val are: " 
+				+ Long.toHexString(xordByteNine) + " " 
+					+ Long.toHexString(xorValL));
 
 		long fingerprint16L = 
 				ByteManipulation.getSevenByteArrayAsLong(
 						Arrays.copyOfRange(smooshBlock, 8, 15)); 
 		
-LOGGER.info("just rolled back:  " );
-LOGGER.info(fingerprint16L+"");
-ByteManipulation.printByteArray(Arrays.copyOfRange(smooshBlock, 8, 15));
-LOGGER.info(ByteManipulation.getHexString(Arrays.copyOfRange(smooshBlock, 8, 15)));
-
 		// check to make sure the conversion from byte array to long happened
 		// correctly
 		String fingerprint16HexS = 
@@ -325,23 +321,21 @@ LOGGER.info(ByteManipulation.getHexString(Arrays.copyOfRange(smooshBlock, 8, 15)
 		
 		long fromHexStringL = Long.parseLong(fingerprint16HexS, 16);
 		
+		LOGGER.trace("fingerprint16 from array v conversion from array: " + 
+				fingerprint16HexS + " " + fromHexStringL);
+		
 		Assert.assertTrue("fingerprint conversion from byte array failure!",
 				fromHexStringL == fingerprint16L);
 
-LOGGER.info("xor val and fingerprint 16 as binary are: ");
-LOGGER.info(Long.toBinaryString(xorValL));
-LOGGER.info(Long.toBinaryString(fingerprint16L));
-
+		
+		// do the rollback
 		fingerprint16L = xorValL ^ fingerprint16L;
 		byte byte16 = (byte) (fingerprint16L & 0x000000000000FF);
 		
-LOGGER.info("byte16 in hex is: " + Integer.toHexString(byte16));
-LOGGER.info("fingerprint16 after xor is: ");
-LOGGER.info(Long.toHexString(fingerprint16L));
-
-//		long fingerprint15L = 
-//				ByteManipulation.appendByteToHead(
-//						xordByteNine, fingerprint16L);
+		LOGGER.trace("byte16 in hex is: " + String.format("%02X", byte16));
+		
+		LOGGER.trace("fingerprint16 after xor is: " 
+				+ Long.toHexString(fingerprint16L));
 
 		long fingerprint15L = (xordByteNine << 54) | (fingerprint16L >> 8);
 		
