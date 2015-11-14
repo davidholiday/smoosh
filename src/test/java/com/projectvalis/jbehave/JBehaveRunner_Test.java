@@ -49,7 +49,7 @@ public class JBehaveRunner_Test extends JUnitStories {
     @Override
     public InjectableStepsFactory stepsFactory() {
         ArrayList<Steps> stepFileList = new ArrayList<Steps>();
-        stepFileList.add(new ReverseRabinSteps());
+        //stepFileList.add(new ReverseRabinSteps());
         stepFileList.add(new DialecticCompressionSteps());
 
         return new InstanceStepsFactory(configuration(), stepFileList);       

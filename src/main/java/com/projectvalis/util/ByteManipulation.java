@@ -146,19 +146,19 @@ public class ByteManipulation {
 	
 	
 	/**
-	 * pretty self explanatory -- takes a byte array and prints the contents
-	 * to the log
+	 * pretty self explanatory -- takes a byte array and returns a string
+	 * representing the contents of the array as a hex string
 	 * 
 	 * @param byteARR
 	 */
-	public static void printByteArray(byte[] byteARR) {
+	public static String getByteArrayAsHexString(byte[] byteARR) {
 		StringBuffer stringBuffer = new StringBuffer();
 		
 		for (byte b : byteARR) {
-			stringBuffer.append(b + " ");
+			stringBuffer.append(String.format("%02X ", b));
 		}
 		
-		LOGGER.info("byte array is: " + stringBuffer.toString());
+		return stringBuffer.toString();
 	}
 	
 	

@@ -111,32 +111,38 @@ public class DialecticCompressionSteps extends Steps {
 		byte[] rolledBackSmooshBlockARR = 
 				fingerprinter.rollBack16(smooshedByteBlockARR);
 			
-		LOGGER.info("fingerprinted fifteen is: ");
-		ByteManipulation.printByteArray(fingerprintedFifteenARR);
+		LOGGER.info("fingerprinted fifteen is: " + 
+				ByteManipulation.getByteArrayAsHexString(
+						fingerprintedFifteenARR));
 		
-		LOGGER.info("smoosh block is: " );
-		ByteManipulation.printByteArray(smooshedByteBlockARR);
+		LOGGER.info("smoosh block is: "  + 
+				ByteManipulation.getByteArrayAsHexString(
+						smooshedByteBlockARR));
 		
-		LOGGER.info("fingerprint of all sixteen is ");
-		ByteManipulation.printByteArray(fingerprinted16ARR);
+		LOGGER.info("fingerprint of all sixteen is "  + 
+				ByteManipulation.getByteArrayAsHexString(
+						fingerprinted16ARR));
 		
-		LOGGER.info("original 16 are: " );
-		ByteManipulation.printByteArray(generatedByteARR);
+		LOGGER.info("original 16 are: " + 
+				ByteManipulation.getByteArrayAsHexString(
+						generatedByteARR));
 		
-		LOGGER.info("rolled back smoosh are is: ");
-		ByteManipulation.printByteArray(rolledBackSmooshBlockARR);
+		LOGGER.info("rolled back smoosh is: " + 
+				ByteManipulation.getByteArrayAsHexString(
+						rolledBackSmooshBlockARR));		
 		
-		
-		
+		// check to ensure byte 16 was successfully retrieved
 		Assert.assertTrue("error detected in rollback of byte 16!",
 				generatedByteARR[15] == rolledBackSmooshBlockARR[7]);
 		
-//		for (int i = 0; i < 6; i ++) {
-//				
-//			Assert.assertTrue(
-//				"error detected in smooshblock retention of fingerprint[1-14]!", 
-//					fingerprintedFifteenARR[i] == smooshedByteBlockARR[i + 8]);
-//		}
+		// check to ensure the fingerprint for bytes [1-15] was accurately 
+		// computed 
+		for (int i = 0; i < 6; i ++) {
+				
+			Assert.assertTrue(
+				"error detected in smooshblock retention of fingerprint[1-14]!", 
+					fingerprintedFifteenARR[i] == rolledBackSmooshBlockARR[i]);
+		}
 		
 		
 		

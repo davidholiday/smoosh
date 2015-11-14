@@ -223,10 +223,6 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			fingerprintLocalL = 
 				((fingerprintLocalL << 8) | (b & 0xFF)) ^ pushTable[headByteI];
 			
-LOGGER.info("byte in, pushtableval, and xor result are: " 
-			+ b + " " + pushTable[headByteI] + " " +
-				Long.toHexString(fingerprintLocalL));
-			
 			// if we're in the first seven of the list throw them into the
 			// return array
 			if (i < 7) {
@@ -237,10 +233,6 @@ LOGGER.info("byte in, pushtableval, and xor result are: "
 			// (aka the head of the fingerprint when byte sixteen was pushed)
 			// and eject.
 			else if (i == 15) {
-				
-LOGGER.info("HEAD BYTE AND XOR VALUE ARE: " 
-			+ headByteI + " " + pushTable[headByteI]);
-
 				returnARR[returnArrIndexI] = (byte) (headByteI & 0x0FF);
 				returnArrIndexI++;
 			}
@@ -332,12 +324,15 @@ LOGGER.info("HEAD BYTE AND XOR VALUE ARE: "
 		fingerprint16L = xorValL ^ fingerprint16L;
 		byte byte16 = (byte) (fingerprint16L & 0x000000000000FF);
 		
-		LOGGER.trace("byte16 in hex is: " + String.format("%02X", byte16));
+		LOGGER.info("byte16 in hex is: " + String.format("%02X", byte16));
 		
-		LOGGER.trace("fingerprint16 after xor is: " 
+		LOGGER.info("fingerprint16 after xor is: " 
 				+ Long.toHexString(fingerprint16L));
 
-		long fingerprint15L = (xordByteNine << 54) | (fingerprint16L >> 8);
+		long fingerprint15L = ((long)xordByteNine << 55) | (fingerprint16L >> 8);
+	
+		LOGGER.info("computed fingerprint15L is: " + 
+				String.format("%X", fingerprint15L));
 		
 		byte[] fingerprint15ARR = 
 				ByteManipulation.getLongAsByteArray(fingerprint15L, true);
