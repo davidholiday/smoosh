@@ -43,23 +43,23 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 
 		for (byte b : bytes) {
 			
-			LOGGER.trace("FINGERPRINT WAS: " + 
+			LOGGER.info("FINGERPRINT WAS: " + 
 					String.format("%X", fingerprint));
 
-			LOGGER.trace("inbound byte is: " + String.format("%X", (b & 0xFF)));
+			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-			LOGGER.trace("pushTable index and value are: "
+			LOGGER.info("pushTable index and value are: "
 					+ String.format("%X", j) + " "
 					+ String.format("%X", pushTable[j]));
 
-			LOGGER.trace("fingerprint pre-XOR, post shift/append is: "
+			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
 					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-			LOGGER.trace("FINGERPRINT IS NOW: "
+			LOGGER.info("FINGERPRINT IS NOW: "
 					+ String.format("%X", fingerprint) + "\n");
 		}
 	}
@@ -161,6 +161,8 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @return byte array representation of fingerprint long. if the fingerprint
 	 * is 99AABBCCDDEEFF, the the returned array will be 
 	 * {99, AA, BB, CC, DD, EE, FF}
+	 * 
+	 * @deprecated use ByteManipulation.getLongAsByteArray(long value) instead
 	 */
 	public byte[] getFingerprintAsByteArray() {
 		int lengthI = (this.degree + 1) / 8;
@@ -197,7 +199,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * [0-6]: the first seven bytes in their original state
 	 * 
 	 * [7]: byte nine, which was at the head of the fingerprint when byte
-	 * sixteen was pushed, foring it to be shoved out the front of the chain.
+	 * sixteen was pushed, forcing it to be shoved out the front of the chain.
 	 * 
 	 * [8-14]: the fingerprint of the sixteen byte block
 	 * 
@@ -221,6 +223,10 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			fingerprintLocalL = 
 				((fingerprintLocalL << 8) | (b & 0xFF)) ^ pushTable[headByteI];
 			
+LOGGER.info("byte in, pushtableval, and xor result are: " 
+			+ b + " " + pushTable[headByteI] + " " +
+				Long.toHexString(fingerprintLocalL));
+			
 			// if we're in the first seven of the list throw them into the
 			// return array
 			if (i < 7) {
@@ -231,13 +237,20 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			// (aka the head of the fingerprint when byte sixteen was pushed)
 			// and eject.
 			else if (i == 15) {
+				
+LOGGER.info("HEAD BYTE AND XOR VALUE ARE: " 
+			+ headByteI + " " + pushTable[headByteI]);
+
 				returnARR[returnArrIndexI] = (byte) (headByteI & 0x0FF);
 				returnArrIndexI++;
 			}
 			
 		}
 
-		for (byte b: getFingerprintAsByteArray()) {
+		byte[] fingerprintByteARR = 
+				ByteManipulation.getLongAsByteArray(fingerprintLocalL, true);
+		
+		for (byte b : fingerprintByteARR) {
 			returnARR[returnArrIndexI] = b;
 			returnArrIndexI++;
 		}
@@ -290,18 +303,50 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	public byte[] rollBack16(byte[] smooshBlock) {
 		byte[] returnARR = new byte[8];
 		byte xordByteNine = smooshBlock[7];
-		long xorValL = pushTable[xordByteNine];
+		long xorValL = pushTable[(int)xordByteNine & 0xFF];
 		
+LOGGER.info("xordByteNine and xor val are: " + Long.toHexString(xordByteNine) + " " 
+		+ Long.toHexString(xorValL));
+
 		long fingerprint16L = 
-				ByteManipulation.getByteArrayAsLong(
-						Arrays.copyOfRange(smooshBlock, 8, 14));
+				ByteManipulation.getSevenByteArrayAsLong(
+						Arrays.copyOfRange(smooshBlock, 8, 15)); 
 		
+LOGGER.info("just rolled back:  " );
+LOGGER.info(fingerprint16L+"");
+ByteManipulation.printByteArray(Arrays.copyOfRange(smooshBlock, 8, 15));
+LOGGER.info(ByteManipulation.getHexString(Arrays.copyOfRange(smooshBlock, 8, 15)));
+
+		// check to make sure the conversion from byte array to long happened
+		// correctly
+		String fingerprint16HexS = 
+				ByteManipulation.getHexString(
+						Arrays.copyOfRange(smooshBlock, 8, 15));
+		
+		long fromHexStringL = Long.parseLong(fingerprint16HexS, 16);
+		
+		Assert.assertTrue("fingerprint conversion from byte array failure!",
+				fromHexStringL == fingerprint16L);
+
+LOGGER.info("xor val and fingerprint 16 as binary are: ");
+LOGGER.info(Long.toBinaryString(xorValL));
+LOGGER.info(Long.toBinaryString(fingerprint16L));
+
 		fingerprint16L = xorValL ^ fingerprint16L;
 		byte byte16 = (byte) (fingerprint16L & 0x000000000000FF);
+		
+LOGGER.info("byte16 in hex is: " + Integer.toHexString(byte16));
+LOGGER.info("fingerprint16 after xor is: ");
+LOGGER.info(Long.toHexString(fingerprint16L));
+
+//		long fingerprint15L = 
+//				ByteManipulation.appendByteToHead(
+//						xordByteNine, fingerprint16L);
+
 		long fingerprint15L = (xordByteNine << 54) | (fingerprint16L >> 8);
 		
 		byte[] fingerprint15ARR = 
-				ByteManipulation.getLongAsByteArray(fingerprint15L);
+				ByteManipulation.getLongAsByteArray(fingerprint15L, true);
 				
 		for (int i = 0; i < fingerprint15ARR.length; i ++) { 
 			returnARR[i] = fingerprint15ARR[i]; 
@@ -344,7 +389,8 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		for (int i = positionI; i < countI; i--) {
 			
 			byte[] xorValBytesARR = 
-				ByteManipulation.getLongAsByteArray(xorChainARR[startIndexI]);
+				ByteManipulation.getLongAsByteArray(
+						xorChainARR[startIndexI], false);
 			
 			processedByte = (byte) (processedByte ^ xorValBytesARR[i]);
 			startIndexI++;
