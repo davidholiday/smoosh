@@ -57,6 +57,10 @@ public class ByteManipulation {
 	}
 	
 	
+
+	
+	
+	
 	
 	/**
 	 * shifts the fingerprint 45 bits to the right, then ensures that what
@@ -82,7 +86,8 @@ public class ByteManipulation {
 		int diffIndexAndXordHeadI = newByte - xordFingerprintHeadI;
 		xordFingerprintHeadI += diffIndexAndXordHeadI;
 
-		String headBinaryS = Integer.toBinaryString(xordFingerprintHeadI);
+		String headBinaryS = 
+				Integer.toBinaryString((xordFingerprintHeadI & 0xFF));
 
 		String headlessXordFingerprintS = Long.toBinaryString(xordFingerprint)
 				.substring(xordFingerprintHeadLengthI);

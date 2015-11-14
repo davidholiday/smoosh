@@ -76,6 +76,17 @@ public class DialecticCompressionSteps extends Steps {
 		fingerprinter.reset();
 		smooshedByteBlockARR = fingerprinter.compress16(generatedByteARR);
 		
+		LOGGER.info("smoosh block is: " + 
+				ByteManipulation.getByteArrayAsHexString(smooshedByteBlockARR));
+		
+		// grab what the xor'd byte nine value should be
+		fingerprinter.reset();
+		fingerprinter.pushBytes(Arrays.copyOf(generatedByteARR, 15));
+		long fingerprint15 = fingerprinter.getFingerprintLong();	
+		byte xordByteNineExpected = (byte)(fingerprint15 >> 45);
+		
+		LOGGER.info("xordByteNineExpected is: " 
+				+ String.format("%02X", xordByteNineExpected));
 		
 		// ensure first seven bytes are retained in smooshblock
 		for (int i = 0; i < 7; i ++) {
@@ -83,6 +94,11 @@ public class DialecticCompressionSteps extends Steps {
 				"error detected in smooshblock retention of first seven bytes!", 
 					generatedByteARR[i] == smooshedByteBlockARR[i]);
 		}
+		
+		// ensure we've got the xor'd byte nine in the smoosh block
+		Assert.assertTrue(
+				"error detected in smooshblock retention of xord byte nine!", 
+					smooshedByteBlockARR[7] == xordByteNineExpected);
 		
 		// ensure the last seven bytes contain the fingerprint for all 16
 		for (int i = 8; i < 15; i ++) {
@@ -137,17 +153,39 @@ public class DialecticCompressionSteps extends Steps {
 		
 		// check to ensure the fingerprint for bytes [1-15] was accurately 
 		// computed 
-		for (int i = 0; i < 6; i ++) {
-				
+		for (int i = 0; i < 6; i ++) {		
 			Assert.assertTrue(
-				"error detected in smooshblock retention of fingerprint[1-14]!", 
+				"error detected in smooshblock retention of fingerprint[1-15]!", 
 					fingerprintedFifteenARR[i] == rolledBackSmooshBlockARR[i]);
 		}
 		
+	
+	}
+
+	
+	
+	
+	@Then("the given bytes 1-7 can be used to undo all the xors against "
+			+ "bytes 9-15 except for the one xor that is indexed by yet "
+			+ "unknown byte 8")
+	public void undoXorChainMostly() {
+		byte[] firstSevenARR = Arrays.copyOf(smooshedByteBlockARR, 7);
+		long[] xorValueChainARR = fingerprinter.getXorChain(firstSevenARR);
 		
-		
+		LOGGER.info("firstSevenARR is: " + 
+				ByteManipulation.getHexString(firstSevenARR));
+	
+		LOGGER.info("xorChain ARR is: ");
+		for (long l : xorValueChainARR) {
+			LOGGER.info(Long.toHexString(l));
+		}
 		
 	}
+	
+	
+	
+	
+	
 	
 	
 }

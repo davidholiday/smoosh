@@ -150,41 +150,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		return returnAL;
 	}	
 
-	
-	
-	/**
-	 * method assumes you've followed the suggested method for choosing a
-	 * polynomial degree (53, 47, 31, 15, ...). 
-	 * 
-	 * @see RabinFingerprintLong for details.
-	 * 
-	 * @return byte array representation of fingerprint long. if the fingerprint
-	 * is 99AABBCCDDEEFF, the the returned array will be 
-	 * {99, AA, BB, CC, DD, EE, FF}
-	 * 
-	 * @deprecated use ByteManipulation.getLongAsByteArray(long value) instead
-	 */
-	public byte[] getFingerprintAsByteArray() {
-		int lengthI = (this.degree + 1) / 8;
-		byte[] returnARR = new byte[lengthI];
-		
-		String fingerprintHexS = getFingerprint().toHexString();
-		
-		if (fingerprintHexS.length() % 2 > 0) {
-			fingerprintHexS = "0" + fingerprintHexS;
-		}
-		
-		int toI = lengthI * 2;
-		int countI = 0;
-		
-		for (int i = 0; i < toI; i+=2) {
-			String byteHexS = fingerprintHexS.substring(i, i + 1);
-			returnARR[countI] = Byte.parseByte(byteHexS, 16);
-			countI += 1;
-		}
-		
-		return returnARR;
-	}
+
 	
 	
 	
@@ -263,7 +229,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @return
 	 */
 	public long[] getXorChain(byte[] firstSevenByteARR) {
-		long[] returnARR = new long[8];
+		long[] returnARR = new long[7];
 		long fingerprintLocalL = 0;
 		
 		for (int i = 0; i < 14; i ++) {
@@ -274,9 +240,9 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 				((fingerprintLocalL << 8) | appendedByte) 
 					^ pushTable[headByteI];	
 			
-			// if we've just pushed byte seven or greater, then we've been
+			// if we've just pushed byte eight or greater, then we've been
 			// xoring stuff and we need to track those values.
-			if (i > 5) { returnARR[i - 6] = pushTable[headByteI]; }
+			if (i > 6) { returnARR[i - 6] = pushTable[headByteI]; }
 		}
 			
 		return returnARR;	
@@ -329,7 +295,14 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		LOGGER.info("fingerprint16 after xor is: " 
 				+ Long.toHexString(fingerprint16L));
 
-		long fingerprint15L = ((long)xordByteNine << 55) | (fingerprint16L >> 8);
+//		long fingerprint15L = 
+//				rollbackFingerprint16(xordByteNine, fingerprint16L);
+		
+//		long fingerprint15L =
+//				((glong)xordByteNine << 53) | (fingerprint16L >> 8);	
+		
+		long fingerprint15L = fingerprint16L >> 8;
+		fingerprint15L = ByteManipulation.appendByteToHead(xordByteNine, fingerprint15L);
 	
 		LOGGER.info("computed fingerprint15L is: " + 
 				String.format("%X", fingerprint15L));
@@ -387,6 +360,44 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		
 		return processedByte;
 	}
+	
+	
+	
+	/**
+	 * takes a fingerprint that's been rolled back from representing bytes 
+	 * [1-16] to one that's been unxor'd. as such, byte 16 is still at the 
+	 * tail, and byte nine needs to be appended to the head. this method
+	 * takes care of that.  
+	 * 
+	 * @param xordByteNine
+	 * @param fingerprint
+	 * @return
+	 */
+	public long rollbackFingerprint16(
+			byte xordByteNine, long fingerprint) {
+		
+		byte[] fingerprintARR = 
+				ByteManipulation.getLongAsByteArray(fingerprint, true);
+		
+LOGGER.info("fingerprint arr was: " + ByteManipulation.getByteArrayAsHexString(fingerprintARR));
+		
+		// shift all bytes to the right one space
+		for (int i = 5; i > -1; i --) { 
+			fingerprintARR[i+1] = fingerprintARR[i];
+		}
+		
+LOGGER.info("byte nine is " + String.format("%X", xordByteNine));
+		
+		// set the head byte to be the xor'd byte nine
+		fingerprintARR[0] = xordByteNine;
+		
+		
+LOGGER.info("fingerprint arr is now: " + ByteManipulation.getByteArrayAsHexString(fingerprintARR));
+		
+		return ByteManipulation.getSevenByteArrayAsLong(fingerprintARR);
+		
+	}
+	
 	
 	
 	
