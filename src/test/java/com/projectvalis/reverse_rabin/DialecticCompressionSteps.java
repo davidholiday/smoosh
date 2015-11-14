@@ -79,13 +79,23 @@ public class DialecticCompressionSteps extends Steps {
 		LOGGER.info("smoosh block is: " + 
 				ByteManipulation.getByteArrayAsHexString(smooshedByteBlockARR));
 		
+		
+		// grab what the xor'd byte eight value should be
+		fingerprinter.reset();
+		fingerprinter.pushBytes(Arrays.copyOf(generatedByteARR, 14));
+		long fingerprint14 = fingerprinter.getFingerprintLong();	
+		byte xordByteEightNibbleExpected = (byte)((fingerprint14 >> 45) & 0xF0);
+		
+		LOGGER.trace("xordByteEightNibbleExpected is: " 
+				+ String.format("%02X", xordByteEightNibbleExpected));
+		
 		// grab what the xor'd byte nine value should be
 		fingerprinter.reset();
 		fingerprinter.pushBytes(Arrays.copyOf(generatedByteARR, 15));
 		long fingerprint15 = fingerprinter.getFingerprintLong();	
 		byte xordByteNineExpected = (byte)(fingerprint15 >> 45);
 		
-		LOGGER.info("xordByteNineExpected is: " 
+		LOGGER.trace("xordByteNineExpected is: " 
 				+ String.format("%02X", xordByteNineExpected));
 		
 		// ensure first seven bytes are retained in smooshblock
@@ -106,6 +116,12 @@ public class DialecticCompressionSteps extends Steps {
 				"error detected in smooshblock retention of fingerprint[1-16]!", 
 						fingerprinted16ARR[i-8] == smooshedByteBlockARR[i]);
 		}
+		
+
+		// ensure we've stored the high order nibble from byte eight
+		Assert.assertTrue(
+				"error detected in smooshblock retention of xord nibble eight!", 
+					smooshedByteBlockARR[15] == xordByteEightNibbleExpected);
 
 		
 	}
@@ -175,10 +191,7 @@ public class DialecticCompressionSteps extends Steps {
 		LOGGER.info("firstSevenARR is: " + 
 				ByteManipulation.getHexString(firstSevenARR));
 	
-		LOGGER.info("xorChain ARR is: ");
-		for (long l : xorValueChainARR) {
-			LOGGER.info(Long.toHexString(l));
-		}
+
 		
 	}
 	

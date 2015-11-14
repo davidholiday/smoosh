@@ -160,7 +160,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @param bytesIn - a sixteen byte block of bytes
 	 * 
 	 * 
-	 * @return a fifteen byte array in the following form:
+	 * @return a fifteen 1/2 byte array in the following form:
 	 * 
 	 * [0-6]: the first seven bytes in their original state
 	 * 
@@ -169,16 +169,21 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * 
 	 * [8-14]: the fingerprint of the sixteen byte block
 	 * 
+	 * [15]: nibble containing the high order bits of xor'd byte eight
+	 * 
 	 * TODO: experiment with returning 15 1/2 bytes instead of fifteen to 
 	 * provide some room for extra metadata as needed. currently an assert is
 	 * in place ensuring the value of the xorIndex <= 8 bits. if that assert
 	 * ever pops, then we know we have to include at least the head bit of 
 	 * the xord byte 8 with what's returned so later we can ensure we've got the
 	 * correct XOR table index when we process byte 7.
+	 * 
+	 * TODO: refactor to make less wonky -- the logic got weird when you 
+	 * tacked the xor'd byte eight nibble to the tail of the return list
 	 */
 	public byte[] compress16(byte[] bytesIn) {
 		int returnArrIndexI = 0;
-		byte[] returnARR = new byte[15];
+		byte[] returnARR = new byte[16];
 		long fingerprintLocalL = 0;
 		
 		for (int i = 0; i < 16; i ++) {
@@ -194,6 +199,13 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			if (i < 7) {
 				returnARR[returnArrIndexI]  = b;
 				returnArrIndexI++;
+			}
+			// else if we're on the fifteenth byte, gran the xord byte eight
+			// (aka the head of the fingerprint when byte fifteen was pushed)
+			// and store the high order nibble. This so we can compute the 
+			// unXor chain later
+			else if (i == 14) {
+				returnARR[15] = (byte) (headByteI & 0x0F0);
 			}
 			// else if we're on the sixteenth byte, grab the xord byte nine
 			// (aka the head of the fingerprint when byte sixteen was pushed)
@@ -229,22 +241,31 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @return
 	 */
 	public long[] getXorChain(byte[] firstSevenByteARR) {
-		long[] returnARR = new long[7];
+		long[] returnARR = new long[8];
 		long fingerprintLocalL = 0;
 		
 		for (int i = 0; i < 14; i ++) {
-			int headByteI = (int) ((fingerprint >> shift) & 0x1FF);	
+			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);	
 			byte appendedByte = (i < 7) ? (firstSevenByteARR[i]) : (0x00);
 			
 			fingerprintLocalL = 
-				((fingerprintLocalL << 8) | appendedByte) 
+				((fingerprintLocalL << 8) | (appendedByte & 0xFF)) 
 					^ pushTable[headByteI];	
 			
-			// if we've just pushed byte eight or greater, then we've been
+			// if we've just pushed byte seventh or greater, then we've been
 			// xoring stuff and we need to track those values.
-			if (i > 6) { returnARR[i - 6] = pushTable[headByteI]; }
+			if (i > 5) { 
+				returnARR[i - 6] = pushTable[headByteI]; 
+				
+				LOGGER.info("computed xor chain index and value is: " + 
+						String.format("%02X", headByteI) + " " + 
+							String.format("%02X", pushTable[headByteI]));	
+			}
+			
 		}
 			
+		
+		
 		return returnARR;	
 	}
 	
@@ -295,14 +316,10 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		LOGGER.info("fingerprint16 after xor is: " 
 				+ Long.toHexString(fingerprint16L));
 
-//		long fingerprint15L = 
-//				rollbackFingerprint16(xordByteNine, fingerprint16L);
-		
-//		long fingerprint15L =
-//				((glong)xordByteNine << 53) | (fingerprint16L >> 8);	
-		
 		long fingerprint15L = fingerprint16L >> 8;
-		fingerprint15L = ByteManipulation.appendByteToHead(xordByteNine, fingerprint15L);
+				
+		fingerprint15L = 
+				ByteManipulation.appendByteToHead(xordByteNine, fingerprint15L);
 	
 		LOGGER.info("computed fingerprint15L is: " + 
 				String.format("%X", fingerprint15L));
