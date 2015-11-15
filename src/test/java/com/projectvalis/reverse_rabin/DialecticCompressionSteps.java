@@ -184,8 +184,8 @@ public class DialecticCompressionSteps extends Steps {
 	public void undoXorChainMostly() {
 		byte[] firstSevenARR = Arrays.copyOf(smooshedByteBlockARR, 7);
 		
-		long[] xorValueChainARR = 
-				fingerprinter.getXorChain(
+		int[] xorValueChainIndexesARR = 
+				fingerprinter.getXorChainIndexes(
 						firstSevenARR, smooshedByteBlockARR[15]);
 		
 		long[] expectedXorValueChainARR = 
@@ -194,21 +194,43 @@ public class DialecticCompressionSteps extends Steps {
 						fingerprinter.getShiftVal(), 
 						fingerprinter.getPushTable());
 		
-
-		for (long l : expectedXorValueChainARR) {
-			System.out.print(l + " ");
-		}
+		for (int i = 0; i < xorValueChainIndexesARR.length; i ++) {			
+			long xorValL = 
+					fingerprinter.getPushTable()[xorValueChainIndexesARR[i]];
 		
-		for (long l : xorValueChainARR) {
-			System.out.print(l + " ");
-		}
-		
-		for (int i = 0; i < xorValueChainARR.length; i ++) {
 			Assert.assertTrue("error detected in computed xor value list!",
-					xorValueChainARR[i] == expectedXorValueChainARR[i + 6]);
+					xorValL == expectedXorValueChainARR[i + 6]);
 		}
 
-	
+		byte[] rolledBackSmooshBlockARR = 
+				fingerprinter.rollBack16(smooshedByteBlockARR);
+		
+		byte[] mostlyUnXordNineToFifteenARR = new byte[7];
+		
+		for (int i = 0; i < 7; i ++) {
+			
+			mostlyUnXordNineToFifteenARR[i] = 
+					fingerprinter.applyXorChain(
+							(i + 2), 
+							xorValueChainIndexesARR, 
+							rolledBackSmooshBlockARR[0]);
+			
+			// what the xor value was when byte 15 was pushed - the processed
+			// byte 8
+			long xorEightValL = expectedXorValueChainARR[15];
+			byte[] xorEightValARR = 
+					ByteManipulation.getLongAsByteArray(xorEightValL, true);
+			
+			byte computedOriginalByte = 
+				(byte) (mostlyUnXordNineToFifteenARR[i] ^ xorEightValARR[i]);
+			
+			Assert.assertTrue("error detected in computed "
+				+ "mostlyUnXordNineToFifteen byte array!", 
+					computedOriginalByte == generatedByteARR[i + 9]);			
+			
+		}
+		
+
 
 		
 	}

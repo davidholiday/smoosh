@@ -287,6 +287,64 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	
 	
 	
+	
+	
+	/**
+	 * takes an array containing the first seven bytes given as part of a 
+	 * smoosh block and returns an array containing all eight of the derived
+	 * XOR values that were applied to the fingerprint
+	 * 
+	 * @param firstSevenByteARR
+	 * @return
+	 */
+	public int[] getXorChainIndexes(
+			byte[] firstSevenByteARR, byte xordByteEightNibble) {
+		
+		int[] returnARR = new int[8];
+		long fingerprintLocalL = 0;	
+		
+		for (int i = 0; i < 14; i ++) {
+			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);
+			LOGGER.trace("headbyte is: " + String.format("%02x", headByteI));
+			byte appendedByte = 0x00;
+			
+			if (i < 7) {
+				appendedByte = firstSevenByteARR[i];
+			}
+			else if (i == 7) {
+				appendedByte = xordByteEightNibble;
+			}
+			
+			LOGGER.trace("fingerprint was: " 
+					+ Long.toHexString(fingerprintLocalL));	
+
+			fingerprintLocalL = 
+				((fingerprintLocalL << 8) | (appendedByte & 0xFF)) 
+					^ pushTable[headByteI];	
+			
+			LOGGER.trace("fingerprint is: " 
+					+ Long.toHexString(fingerprintLocalL));		
+			
+			// if we've just pushed byte seventh or greater, then we've been
+			// xoring stuff and we need to track those values.
+			if (i > 5) { 
+				returnARR[i - 6] = headByteI; 
+				
+				LOGGER.info("computed xor chain index and value is: " + 
+						String.format("%02X", headByteI) + " " + 
+							String.format("%02X", pushTable[headByteI]));	
+			}
+			
+			LOGGER.trace("******");			
+		}	
+		
+		return returnARR;	
+	}
+	
+	
+	
+	
+	
 	/**
 	 * takes a smoosh block and rolls back the fingerprint for bytes [1-16] 
 	 * to the fingerprint for bytes [1-15] and grabs the original state of byte
@@ -375,7 +433,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @return a mostly unprocessed byte (6/7 XORs are handled by this method)
 	 */
 	public byte applyXorChain(int startIndexI, 
-							  byte[] xorChainARR, 
+							  int[] xorChainARR, 
 							  byte processedByte) {
 		
 		int countI = 8 - startIndexI;
@@ -396,11 +454,26 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	
 	
 	
+	
+	/**
+	 * return the current shift right value (as in - the number of bytes right
+	 * the current fingerprint will be shifted to compute the xor pushtable 
+	 * index).
+	 * 
+	 * @return
+	 */
 	public int getShiftVal() {
 		return this.shift;
 	}
 	
 	
+	
+	
+	/**
+	 * return the current xor value table
+	 * 
+	 * @return
+	 */
 	public long[] getPushTable() {
 		return this.pushTable;
 	}
