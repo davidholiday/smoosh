@@ -81,13 +81,10 @@ public class DialecticCompressionSteps extends Steps {
 		
 		
 		// grab what the xor'd byte eight value should be
-		fingerprinter.reset();
-		fingerprinter.pushBytes(Arrays.copyOf(generatedByteARR, 14));
-		long fingerprint14 = fingerprinter.getFingerprintLong();	
-		byte xordByteEightNibbleExpected = (byte)((fingerprint14 >> 45) & 0xF0);
+		byte byteEightNibbleExpected = (byte) (generatedByteARR[7] & 0xF0);
 		
 		LOGGER.trace("xordByteEightNibbleExpected is: " 
-				+ String.format("%02X", xordByteEightNibbleExpected));
+				+ String.format("%02X", byteEightNibbleExpected));
 		
 		// grab what the xor'd byte nine value should be
 		fingerprinter.reset();
@@ -120,8 +117,8 @@ public class DialecticCompressionSteps extends Steps {
 
 		// ensure we've stored the high order nibble from byte eight
 		Assert.assertTrue(
-				"error detected in smooshblock retention of xord nibble eight!", 
-					smooshedByteBlockARR[15] == xordByteEightNibbleExpected);
+				"error detected in smooshblock retention of nibble eight!", 
+					smooshedByteBlockARR[15] == byteEightNibbleExpected);
 
 		
 	}
@@ -186,7 +183,10 @@ public class DialecticCompressionSteps extends Steps {
 			+ "unknown byte 8")
 	public void undoXorChainMostly() {
 		byte[] firstSevenARR = Arrays.copyOf(smooshedByteBlockARR, 7);
-		long[] xorValueChainARR = fingerprinter.getXorChain(firstSevenARR);
+		
+		long[] xorValueChainARR = 
+				fingerprinter.getXorChain(
+						firstSevenARR, smooshedByteBlockARR[15]);
 		
 		LOGGER.info("firstSevenARR is: " + 
 				ByteManipulation.getHexString(firstSevenARR));

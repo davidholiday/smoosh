@@ -204,8 +204,8 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			// (aka the head of the fingerprint when byte fifteen was pushed)
 			// and store the high order nibble. This so we can compute the 
 			// unXor chain later
-			else if (i == 14) {
-				returnARR[15] = (byte) (headByteI & 0x0F0);
+			else if (i == 7) {
+				returnARR[15] = (byte) (b & 0x0F0);
 			}
 			// else if we're on the sixteenth byte, grab the xord byte nine
 			// (aka the head of the fingerprint when byte sixteen was pushed)
@@ -240,18 +240,35 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * @param firstSevenByteARR
 	 * @return
 	 */
-	public long[] getXorChain(byte[] firstSevenByteARR) {
+	public long[] getXorChain(
+			byte[] firstSevenByteARR, byte xordByteEightNibble) {
+		
 		long[] returnARR = new long[8];
 		long fingerprintLocalL = 0;
 		
+		
 		for (int i = 0; i < 14; i ++) {
-			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);	
-			byte appendedByte = (i < 7) ? (firstSevenByteARR[i]) : (0x00);
+			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);
+LOGGER.info("headbyte is: " + String.format("%02x", headByteI));
+			//byte appendedByte = (i < 7) ? (firstSevenByteARR[i]) : (0x00);
+			byte appendedByte = 0x00;
 			
+			if (i < 7) {
+				appendedByte = firstSevenByteARR[i];
+			}
+			else if (i == 7) {
+				appendedByte = xordByteEightNibble;
+LOGGER.info("byte eight high order nibble is: " 
+				+ String.format("%02X", xordByteEightNibble));
+LOGGER.info((appendedByte & 0xFF) + "");
+			}
+LOGGER.info("fingerprint was: " + Long.toHexString(fingerprintLocalL));	
+
 			fingerprintLocalL = 
 				((fingerprintLocalL << 8) | (appendedByte & 0xFF)) 
 					^ pushTable[headByteI];	
 			
+LOGGER.info("fingerprint is: " + Long.toHexString(fingerprintLocalL));				
 			// if we've just pushed byte seventh or greater, then we've been
 			// xoring stuff and we need to track those values.
 			if (i > 5) { 
@@ -261,7 +278,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 						String.format("%02X", headByteI) + " " + 
 							String.format("%02X", pushTable[headByteI]));	
 			}
-			
+LOGGER.info("******");			
 		}
 			
 		
@@ -380,40 +397,33 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	
 	
 	
-	/**
-	 * takes a fingerprint that's been rolled back from representing bytes 
-	 * [1-16] to one that's been unxor'd. as such, byte 16 is still at the 
-	 * tail, and byte nine needs to be appended to the head. this method
-	 * takes care of that.  
-	 * 
-	 * @param xordByteNine
-	 * @param fingerprint
-	 * @return
-	 */
-	public long rollbackFingerprint16(
-			byte xordByteNine, long fingerprint) {
-		
-		byte[] fingerprintARR = 
-				ByteManipulation.getLongAsByteArray(fingerprint, true);
-		
-LOGGER.info("fingerprint arr was: " + ByteManipulation.getByteArrayAsHexString(fingerprintARR));
-		
-		// shift all bytes to the right one space
-		for (int i = 5; i > -1; i --) { 
-			fingerprintARR[i+1] = fingerprintARR[i];
-		}
-		
-LOGGER.info("byte nine is " + String.format("%X", xordByteNine));
-		
-		// set the head byte to be the xor'd byte nine
-		fingerprintARR[0] = xordByteNine;
-		
-		
-LOGGER.info("fingerprint arr is now: " + ByteManipulation.getByteArrayAsHexString(fingerprintARR));
-		
-		return ByteManipulation.getSevenByteArrayAsLong(fingerprintARR);
-		
-	}
+//	/**
+//	 * takes a fingerprint that's been rolled back from representing bytes 
+//	 * [1-16] to one that's been unxor'd. as such, byte 16 is still at the 
+//	 * tail, and byte nine needs to be appended to the head. this method
+//	 * takes care of that.  
+//	 * 
+//	 * @param xordByteNine
+//	 * @param fingerprint
+//	 * @return
+//	 */
+//	public long rollbackFingerprint16(
+//			byte xordByteNine, long fingerprint) {
+//		
+//		byte[] fingerprintARR = 
+//				ByteManipulation.getLongAsByteArray(fingerprint, true);
+//				
+//		// shift all bytes to the right one space
+//		for (int i = 5; i > -1; i --) { 
+//			fingerprintARR[i+1] = fingerprintARR[i];
+//		}
+//				
+//		// set the head byte to be the xor'd byte nine
+//		fingerprintARR[0] = xordByteNine;
+//		
+//		return ByteManipulation.getSevenByteArrayAsLong(fingerprintARR);
+//		
+//	}
 	
 	
 	
