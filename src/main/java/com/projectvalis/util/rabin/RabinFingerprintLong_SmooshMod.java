@@ -62,6 +62,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			LOGGER.info("FINGERPRINT IS NOW: "
 					+ String.format("%X", fingerprint) + "\n");
 		}
+		
 	}
 
 	
@@ -169,7 +170,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * 
 	 * [8-14]: the fingerprint of the sixteen byte block
 	 * 
-	 * [15]: nibble containing the high order bits of xor'd byte eight
+	 * [15]: nibble containing the high order bits of byte eight
 	 * 
 	 * TODO: experiment with returning 15 1/2 bytes instead of fifteen to 
 	 * provide some room for extra metadata as needed. currently an assert is
@@ -244,13 +245,11 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			byte[] firstSevenByteARR, byte xordByteEightNibble) {
 		
 		long[] returnARR = new long[8];
-		long fingerprintLocalL = 0;
-		
+		long fingerprintLocalL = 0;	
 		
 		for (int i = 0; i < 14; i ++) {
 			int headByteI = (int) ((fingerprintLocalL >> shift) & 0x1FF);
-LOGGER.info("headbyte is: " + String.format("%02x", headByteI));
-			//byte appendedByte = (i < 7) ? (firstSevenByteARR[i]) : (0x00);
+			LOGGER.trace("headbyte is: " + String.format("%02x", headByteI));
 			byte appendedByte = 0x00;
 			
 			if (i < 7) {
@@ -258,17 +257,18 @@ LOGGER.info("headbyte is: " + String.format("%02x", headByteI));
 			}
 			else if (i == 7) {
 				appendedByte = xordByteEightNibble;
-LOGGER.info("byte eight high order nibble is: " 
-				+ String.format("%02X", xordByteEightNibble));
-LOGGER.info((appendedByte & 0xFF) + "");
 			}
-LOGGER.info("fingerprint was: " + Long.toHexString(fingerprintLocalL));	
+			
+			LOGGER.trace("fingerprint was: " 
+					+ Long.toHexString(fingerprintLocalL));	
 
 			fingerprintLocalL = 
 				((fingerprintLocalL << 8) | (appendedByte & 0xFF)) 
 					^ pushTable[headByteI];	
 			
-LOGGER.info("fingerprint is: " + Long.toHexString(fingerprintLocalL));				
+			LOGGER.trace("fingerprint is: " 
+					+ Long.toHexString(fingerprintLocalL));		
+			
 			// if we've just pushed byte seventh or greater, then we've been
 			// xoring stuff and we need to track those values.
 			if (i > 5) { 
@@ -278,10 +278,9 @@ LOGGER.info("fingerprint is: " + Long.toHexString(fingerprintLocalL));
 						String.format("%02X", headByteI) + " " + 
 							String.format("%02X", pushTable[headByteI]));	
 			}
-LOGGER.info("******");			
-		}
 			
-		
+			LOGGER.trace("******");			
+		}	
 		
 		return returnARR;	
 	}
@@ -397,35 +396,14 @@ LOGGER.info("******");
 	
 	
 	
-//	/**
-//	 * takes a fingerprint that's been rolled back from representing bytes 
-//	 * [1-16] to one that's been unxor'd. as such, byte 16 is still at the 
-//	 * tail, and byte nine needs to be appended to the head. this method
-//	 * takes care of that.  
-//	 * 
-//	 * @param xordByteNine
-//	 * @param fingerprint
-//	 * @return
-//	 */
-//	public long rollbackFingerprint16(
-//			byte xordByteNine, long fingerprint) {
-//		
-//		byte[] fingerprintARR = 
-//				ByteManipulation.getLongAsByteArray(fingerprint, true);
-//				
-//		// shift all bytes to the right one space
-//		for (int i = 5; i > -1; i --) { 
-//			fingerprintARR[i+1] = fingerprintARR[i];
-//		}
-//				
-//		// set the head byte to be the xor'd byte nine
-//		fingerprintARR[0] = xordByteNine;
-//		
-//		return ByteManipulation.getSevenByteArrayAsLong(fingerprintARR);
-//		
-//	}
+	public int getShiftVal() {
+		return this.shift;
+	}
 	
 	
+	public long[] getPushTable() {
+		return this.pushTable;
+	}
 	
 	
 }

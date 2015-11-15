@@ -188,8 +188,26 @@ public class DialecticCompressionSteps extends Steps {
 				fingerprinter.getXorChain(
 						firstSevenARR, smooshedByteBlockARR[15]);
 		
-		LOGGER.info("firstSevenARR is: " + 
-				ByteManipulation.getHexString(firstSevenARR));
+		long[] expectedXorValueChainARR = 
+				TestHelper.pushBytesReturnXorIndexes(
+						generatedByteARR, 
+						fingerprinter.getShiftVal(), 
+						fingerprinter.getPushTable());
+		
+
+		for (long l : expectedXorValueChainARR) {
+			System.out.print(l + " ");
+		}
+		
+		for (long l : xorValueChainARR) {
+			System.out.print(l + " ");
+		}
+		
+		for (int i = 0; i < xorValueChainARR.length; i ++) {
+			Assert.assertTrue("error detected in computed xor value list!",
+					xorValueChainARR[i] == expectedXorValueChainARR[i + 6]);
+		}
+
 	
 
 		
