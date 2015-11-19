@@ -44,23 +44,23 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 
 		for (byte b : bytes) {
 			
-			LOGGER.trace("FINGERPRINT WAS: " + 
+			LOGGER.info("FINGERPRINT WAS: " + 
 					String.format("%X", fingerprint));
 
-			LOGGER.trace("inbound byte is: " + String.format("%X", (b & 0xFF)));
+			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-			LOGGER.trace("pushTable index and value are: "
+			LOGGER.info("pushTable index and value are: "
 					+ String.format("%X", j) + " "
 					+ String.format("%X", pushTable[j]));
 
-			LOGGER.trace("fingerprint pre-XOR, post shift/append is: "
+			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
 					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-			LOGGER.trace("FINGERPRINT IS NOW: "
+			LOGGER.info("FINGERPRINT IS NOW: "
 					+ String.format("%X", fingerprint) + "\n");
 		}
 		
@@ -449,12 +449,18 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 			byte[] xorValBytesARR = 
 				ByteManipulation.getLongAsByteArray(xorValL, true);
 			
+LOGGER.info(String.format("%02X", processedByte) + " " + positionI);
+for (byte b : xorValBytesARR) {
+	System.out.print((b & 0xFF) + " | ");
+}
+System.out.print("\n");
+
 			processedByte = (byte) (processedByte ^ xorValBytesARR[positionI]);
 			
 			startIndexI++;
 			positionI--;
 		}
-		
+LOGGER.info("returning:: " + String.format("%02X", processedByte));		
 		return processedByte;
 	}
 	

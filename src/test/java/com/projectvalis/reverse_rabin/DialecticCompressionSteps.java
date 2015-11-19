@@ -229,6 +229,21 @@ public class DialecticCompressionSteps extends Steps {
 			+ "known byte(s) 1-7 and 16.")
 	public void computeAllPossibleSolutions() {
 		
+		byte[] firstSevenARR = Arrays.copyOf(smooshedByteBlockARR, 7);
+		
+		byte[] rolledBackSmooshBlockARR = 
+				fingerprinter.rollBack16(smooshedByteBlockARR);
+		
+		byte[] fingerprintedFifteenARR = 
+				Arrays.copyOf(rolledBackSmooshBlockARR, 7);
+Assert.assertTrue(7 == fingerprintedFifteenARR.length);				
+		long fingerprintedFifteenL = 
+			ByteManipulation.getSevenByteArrayAsLong(fingerprintedFifteenARR);
+		
+		int[] xorChainIndexesARR = 
+				fingerprinter.getXorChainIndexes(
+						firstSevenARR, smooshedByteBlockARR[15]);
+		
 		byte[] mostlyUnXordNineToFifteenARR = 
 				fingerprinter.mostlyUnXorNineToFifteen(smooshedByteBlockARR);
 		
@@ -245,8 +260,13 @@ public class DialecticCompressionSteps extends Steps {
 		}
 		
 		
+		// compute all possible answers and figure out which one is correct.
+		// there can be only one...
 		int matchCountI = 0;
-		for (byte[] candidateARR : candidateNineToFifteenAL) {
+		int matchIndexI = -1;
+		
+		for (int h = 0; h < candidateNineToFifteenAL.size(); h ++) {
+			byte[] candidateARR = candidateNineToFifteenAL.get(h);
 			boolean matchFoundB = true;
 			
 			for (int i = 0; i < candidateARR.length; i ++) {
@@ -257,18 +277,64 @@ public class DialecticCompressionSteps extends Steps {
 				
 			}
 			
-			if (matchFoundB) { matchCountI++; }
+			if (matchFoundB) { 
+				matchCountI++; 
+				matchIndexI = h;
+			}
 			
 		}
 		
 		LOGGER.info("********************* matchCountI is: " + matchCountI);
+		LOGGER.info("********************* matchIndexI is: " + matchIndexI);
 		Assert.assertTrue(
-				"match count was greater than one!", matchCountI == 1);
+				"match count was something other than one!", matchCountI == 1);
+		
+		
+		
+		
+		// now that we know what the value of byte eight was when it was at the
+		// head of the fingerprint, we can roll it back to its original state.
+		long eightAppendedToFingerprintFifteenL = 
+				ByteManipulation.appendByteToHead(
+						(byte)matchIndexI, fingerprintedFifteenL);
+		
+		long fingerprintFourteenL = 
+			ByteManipulation.removeTailByte(eightAppendedToFingerprintFifteenL);
+		
+		byte[] fingerprintFourteenARR = 
+				ByteManipulation.getLongAsByteArray(
+						fingerprintFourteenL, true);
+		
+LOGGER.info("fingerprintFourteen is: " + 
+			ByteManipulation.getByteArrayAsHexString(fingerprintFourteenARR));
+
+		byte processedByteEight = fingerprintFourteenARR[1];
+		
+LOGGER.info("processed byte eight is: " + 
+		String.format("%02X", processedByteEight));
+		
+		byte originalByteEight = 
+				fingerprinter.applyXorChain(
+						1, xorChainIndexesARR, processedByteEight);
+		
+LOGGER.info(String.format("%02X", originalByteEight) + " " + 
+		String.format("%02X", generatedByteARR[7]) + " " 
+			+ String.format("%02X", smooshedByteBlockARR[15]));
+
+		Assert.assertTrue("error detected in computing original byte eight!", 
+				originalByteEight == generatedByteARR[7]);
+		
+		
 	}
 	
 	
 	
 }
+
+
+
+
+
 
 
 
