@@ -1,5 +1,6 @@
 package com.projectvalis.reverse_rabin;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -188,12 +189,6 @@ public class DialecticCompressionSteps extends Steps {
 				fingerprinter.getXorChainIndexes(
 						firstSevenARR, smooshedByteBlockARR[15]);
 		
-		int[] expectedXorIndexChainARR = 
-				TestHelper.pushBytesReturnXorIndexes(
-						generatedByteARR, 
-						fingerprinter.getShiftVal(), 
-						fingerprinter.getPushTable());
-		
 		long[] expectedXorValueChainARR = 
 				TestHelper.pushBytesReturnXorValues(
 						generatedByteARR, 
@@ -207,78 +202,69 @@ public class DialecticCompressionSteps extends Steps {
 			Assert.assertTrue("error detected in computed xor value list!",
 					xorValL == expectedXorValueChainARR[i + 6]);
 		}
-
-		byte[] rolledBackSmooshBlockARR = 
-				fingerprinter.rollBack16(smooshedByteBlockARR);
 		
 		// what the xor value was when byte 15 was pushed - the processed
 		// byte 8
 		long xorEightValL = expectedXorValueChainARR[14];
-LOGGER.info("smoosh ARR is: " );
-for (int p = 0; p < smooshedByteBlockARR.length; p ++) {
-	System.out.print((smooshedByteBlockARR[p] & 0xFF) + " | ");
-}
-System.out.print("\n");		
-
-LOGGER.info("expectedXorIndexChainARR ARR is: " );
-for (int p = 0; p < expectedXorIndexChainARR.length; p ++) {
-	System.out.print((expectedXorIndexChainARR[p] & 0xFF) + " | ");
-}
-System.out.print("\n");	
-
-LOGGER.info((smooshedByteBlockARR[7] & 0xFF) + " " + expectedXorIndexChainARR[15]);
-
-Assert.assertTrue((smooshedByteBlockARR[7] & 0xFF) == expectedXorIndexChainARR[15]);
 		
-		byte[] xorEightValARR = 
-				ByteManipulation.getLongAsByteArray(xorEightValL, true);		
+		byte[] mostlyUnXordNineToFifteenARR = 
+			fingerprinter.mostlyUnXorNineToFifteen(smooshedByteBlockARR);
 		
-		LOGGER.info("xorEightValARR: ");
-		for (int k = 0; k < xorEightValARR.length; k ++) {
-			System.out.print((xorEightValARR[k] & 0xFF) + " : ");
-		}
-		System.out.print("\n");	
-		
-		
-		byte[] mostlyUnXordNineToFifteenARR = new byte[7];
+		byte[] unXordNineToFifteenARR = fingerprinter.applyXorEight(
+							xorEightValL, mostlyUnXordNineToFifteenARR);
 		
 		for (int i = 0; i < 7; i ++) {
-			
-			mostlyUnXordNineToFifteenARR[i] = 
-					fingerprinter.applyXorChain(
-							(i + 2), 
-							xorValueChainIndexesARR, 
-							rolledBackSmooshBlockARR[i]);
-			
-			byte computedOriginalByte = 
-				(byte) (mostlyUnXordNineToFifteenARR[i] ^ xorEightValARR[i]);
-			
-LOGGER.info("computedOriginalByte is: " + (computedOriginalByte & 0xFF));
-
-LOGGER.info("mostlyUnXord byte index: " + (i) + " value: " + 
-		(mostlyUnXordNineToFifteenARR[i] & 0xFF));
-
-LOGGER.info("xorEightValARR element " + i + 
-		" is " + (xorEightValARR[i] & 0xFF));
-		
-LOGGER.info("generatedByte index is: " + (i + 8));
-LOGGER.info("generatedByte ARR is: " );
-for (int p = 0; p < generatedByteARR.length; p ++) {
-	System.out.print((generatedByteARR[p] & 0xFF) + " | ");
-}
-System.out.print("\n");
 
 			Assert.assertTrue("error detected in computed "
-				+ "mostlyUnXordNineToFifteen byte array!", 
-					computedOriginalByte == generatedByteARR[i + 8]);			
-			
+					+ "mostlyUnXordNineToFifteen byte array!", 
+						unXordNineToFifteenARR[i] == generatedByteARR[i + 8]);
 		}
+		
 		
 	}
 	
 	
 	
-	
+	@Then("all 256 possible values for bytes 8-15 can be inserted between "
+			+ "known byte(s) 1-7 and 16.")
+	public void computeAllPossibleSolutions() {
+		
+		byte[] mostlyUnXordNineToFifteenARR = 
+				fingerprinter.mostlyUnXorNineToFifteen(smooshedByteBlockARR);
+		
+		List<byte[]> candidateNineToFifteenAL = new ArrayList<byte[]>();
+		
+		for (int i = 0; i < 256; i ++) {
+			long xorEightValL = fingerprinter.getPushTable()[i];
+			
+			byte[] answerCandidateARR = 
+					fingerprinter.applyXorEight(
+							xorEightValL, mostlyUnXordNineToFifteenARR);
+			
+			candidateNineToFifteenAL.add(answerCandidateARR);
+		}
+		
+		
+		int matchCountI = 0;
+		for (byte[] candidateARR : candidateNineToFifteenAL) {
+			boolean matchFoundB = true;
+			
+			for (int i = 0; i < candidateARR.length; i ++) {
+				
+				if (candidateARR[i] != generatedByteARR[i + 8]) {
+					matchFoundB = false;
+				}
+				
+			}
+			
+			if (matchFoundB) { matchCountI++; }
+			
+		}
+		
+		LOGGER.info("********************* matchCountI is: " + matchCountI);
+		Assert.assertTrue(
+				"match count was greater than one!", matchCountI == 1);
+	}
 	
 	
 	

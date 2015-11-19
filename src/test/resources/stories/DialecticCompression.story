@@ -32,9 +32,6 @@ Given an array of 16 bytes:
 When the byte array is fingerprinted:
 And the first seven bytes and the head fingerprint byte (fingerprinted byte 
 nine) is retained after byte 16 is pushed
-And bytes 9-15 have been mostly un-xord
-And every possible value for byte 8 is used to enumerate through the xor table 
-to compute all 256 possible values for bytes 8-15
 Then all 256 possible values for bytes 8-15 can be inserted between known 
 byte(s) 1-7 and 16.
 

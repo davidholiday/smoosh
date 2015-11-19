@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.projectvalis.util.ByteManipulation;
+import com.projectvalis.util.TestHelper;
 
 /**
  * extends the stock fingerprinting logic to make it easier to hook it into
@@ -439,7 +440,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 		
 		int countI = 8 - startIndexI;
 		int positionI = 6;
-LOGGER.info("count and position are: " + countI + " " + positionI);
+
 		for (int i = 0; i < countI; i++) {
 			
 			int xorIndexValueI = xorIndexChainARR[startIndexI];
@@ -447,16 +448,6 @@ LOGGER.info("count and position are: " + countI + " " + positionI);
 			
 			byte[] xorValBytesARR = 
 				ByteManipulation.getLongAsByteArray(xorValL, true);
-
-LOGGER.info("xorValBytesARR: ");
-for (int k = 0; k < xorValBytesARR.length; k ++) {
-	System.out.print((xorValBytesARR[k] & 0xFF) + " : ");
-}
-System.out.print("\n");		
-			
-			LOGGER.info("xoring element: " + startIndexI + ", byte index: " +
-				positionI + ", against processedByte: " 
-					+ (processedByte & 0xFF));
 			
 			processedByte = (byte) (processedByte ^ xorValBytesARR[positionI]);
 			
@@ -465,6 +456,61 @@ System.out.print("\n");
 		}
 		
 		return processedByte;
+	}
+	
+	
+	
+	/**
+	 * unrolls all but the last xor operation performed against bytes 
+	 * nine through fifteen
+	 * 
+	 * @param smooshedByteBlockARR
+	 * @return
+	 */
+	public byte[] mostlyUnXorNineToFifteen(byte[] smooshedByteBlockARR) {
+		byte[] firstSevenARR = Arrays.copyOf(smooshedByteBlockARR, 7);
+		
+		int[] xorValueChainIndexesARR = 
+				getXorChainIndexes(firstSevenARR, smooshedByteBlockARR[15]);
+
+		byte[] rolledBackSmooshBlockARR = rollBack16(smooshedByteBlockARR);	
+			
+		byte[] mostlyUnXordNineToFifteenARR = new byte[7];
+		
+		for (int i = 0; i < 7; i ++) {
+			
+			mostlyUnXordNineToFifteenARR[i] = applyXorChain(
+				(i + 2), xorValueChainIndexesARR, rolledBackSmooshBlockARR[i]);			
+			
+		}
+		
+		return mostlyUnXordNineToFifteenARR;
+	}
+	
+	
+	
+	/**
+	 * applies the last xor operation (xor'd byte eight) to a mostly unxord
+	 * chain representing bytes nine through fifteen. 
+	 * 
+	 * @param xorEightVal
+	 * @param mostlyUnXordNineToFifteenARR
+	 * @return
+	 */
+	public byte[] applyXorEight(
+			long xorEightVal, byte[] mostlyUnXordNineToFifteenARR) {
+		byte[] returnARR = new byte[7];
+		
+		byte[] xorEightValARR = 
+				ByteManipulation.getLongAsByteArray(xorEightVal, true);
+		
+		for (int i = 0; i < 7; i ++) {
+			returnARR[i] = 
+					(byte)(mostlyUnXordNineToFifteenARR[i] ^ xorEightValARR[i]);
+		}
+		
+		
+		return returnARR;
 	}
 	
 	
