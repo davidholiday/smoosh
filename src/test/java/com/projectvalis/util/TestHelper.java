@@ -49,7 +49,7 @@ public class TestHelper {
 	 * @param pushTable
 	 * @return
 	 */
-	public static long[] pushBytesReturnXorIndexes(
+	public static long[] pushBytesReturnXorValues(
 			final byte[] bytes, int shift, long[] pushTable) {
 		
 		long fingerprintL = 0;
@@ -68,6 +68,50 @@ public class TestHelper {
 		
 	}
 	
+
+	
+	/**
+	 * same as the regular rabin fingerprint method except this one returns
+	 * the push table values used during processing
+	 * 
+	 * @param bytes
+	 * @param shift
+	 * @param pushTable
+	 * @return
+	 */
+	public static int[] pushBytesReturnXorIndexes(
+			final byte[] bytes, int shift, long[] pushTable) {
+		
+		long fingerprintL = 0;
+		int[] xorIndexARR = new int[bytes.length];
+		
+		for (int i = 0; i < bytes.length; i ++) {
+			int j = (int) ((fingerprintL >> shift) & 0x1FF);
+			
+			fingerprintL = 
+					((fingerprintL << 8) | (bytes[i] & 0xFF)) ^ pushTable[j];
+			
+			xorIndexARR[i] = j;
+		}
+		
+		return xorIndexARR;
+		
+	}
+	
+	
 	
 	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

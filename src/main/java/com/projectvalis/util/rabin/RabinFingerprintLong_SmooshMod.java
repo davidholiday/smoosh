@@ -43,23 +43,23 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 
 		for (byte b : bytes) {
 			
-			LOGGER.info("FINGERPRINT WAS: " + 
+			LOGGER.trace("FINGERPRINT WAS: " + 
 					String.format("%X", fingerprint));
 
-			LOGGER.info("inbound byte is: " + String.format("%X", (b & 0xFF)));
+			LOGGER.trace("inbound byte is: " + String.format("%X", (b & 0xFF)));
 
 			int j = (int) ((fingerprint >> shift) & 0x1FF);
 
-			LOGGER.info("pushTable index and value are: "
+			LOGGER.trace("pushTable index and value are: "
 					+ String.format("%X", j) + " "
 					+ String.format("%X", pushTable[j]));
 
-			LOGGER.info("fingerprint pre-XOR, post shift/append is: "
+			LOGGER.trace("fingerprint pre-XOR, post shift/append is: "
 					+ String.format("%X", ((fingerprint << 8) | (b & 0xFF))));
 
 			fingerprint = ((fingerprint << 8) | (b & 0xFF)) ^ pushTable[j];
 
-			LOGGER.info("FINGERPRINT IS NOW: "
+			LOGGER.trace("FINGERPRINT IS NOW: "
 					+ String.format("%X", fingerprint) + "\n");
 		}
 		
@@ -292,7 +292,7 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	/**
 	 * takes an array containing the first seven bytes given as part of a 
 	 * smoosh block and returns an array containing all eight of the derived
-	 * XOR values that were applied to the fingerprint
+	 * XOR table index values that were applied to the fingerprint
 	 * 
 	 * @param firstSevenByteARR
 	 * @return
@@ -426,27 +426,42 @@ public class RabinFingerprintLong_SmooshMod extends RabinFingerprintLong {
 	 * 'which byte was shifted off the head of the fingerprint when 
 	 * value [processedByte] was appended to the tail?
 	 * 
-	 * @param xorChainARR the values used to xor the fingerprint for bytes 1-14
+	 * @param xorChainARR the indexes to the values used used to xor 
+	 * the fingerprint for bytes 1-14
 	 * 
 	 * @param processedByte a single fingerprinted byte
 	 * 
 	 * @return a mostly unprocessed byte (6/7 XORs are handled by this method)
 	 */
 	public byte applyXorChain(int startIndexI, 
-							  int[] xorChainARR, 
+							  int[] xorIndexChainARR, 
 							  byte processedByte) {
 		
 		int countI = 8 - startIndexI;
-		int positionI = 7;
-		
-		for (int i = positionI; i < countI; i--) {
+		int positionI = 6;
+LOGGER.info("count and position are: " + countI + " " + positionI);
+		for (int i = 0; i < countI; i++) {
+			
+			int xorIndexValueI = xorIndexChainARR[startIndexI];
+			long xorValL = pushTable[xorIndexValueI];
 			
 			byte[] xorValBytesARR = 
-				ByteManipulation.getLongAsByteArray(
-						xorChainARR[startIndexI], false);
+				ByteManipulation.getLongAsByteArray(xorValL, true);
+
+LOGGER.info("xorValBytesARR: ");
+for (int k = 0; k < xorValBytesARR.length; k ++) {
+	System.out.print((xorValBytesARR[k] & 0xFF) + " : ");
+}
+System.out.print("\n");		
 			
-			processedByte = (byte) (processedByte ^ xorValBytesARR[i]);
+			LOGGER.info("xoring element: " + startIndexI + ", byte index: " +
+				positionI + ", against processedByte: " 
+					+ (processedByte & 0xFF));
+			
+			processedByte = (byte) (processedByte ^ xorValBytesARR[positionI]);
+			
 			startIndexI++;
+			positionI--;
 		}
 		
 		return processedByte;

@@ -188,8 +188,14 @@ public class DialecticCompressionSteps extends Steps {
 				fingerprinter.getXorChainIndexes(
 						firstSevenARR, smooshedByteBlockARR[15]);
 		
-		long[] expectedXorValueChainARR = 
+		int[] expectedXorIndexChainARR = 
 				TestHelper.pushBytesReturnXorIndexes(
+						generatedByteARR, 
+						fingerprinter.getShiftVal(), 
+						fingerprinter.getPushTable());
+		
+		long[] expectedXorValueChainARR = 
+				TestHelper.pushBytesReturnXorValues(
 						generatedByteARR, 
 						fingerprinter.getShiftVal(), 
 						fingerprinter.getPushTable());
@@ -205,6 +211,35 @@ public class DialecticCompressionSteps extends Steps {
 		byte[] rolledBackSmooshBlockARR = 
 				fingerprinter.rollBack16(smooshedByteBlockARR);
 		
+		// what the xor value was when byte 15 was pushed - the processed
+		// byte 8
+		long xorEightValL = expectedXorValueChainARR[14];
+LOGGER.info("smoosh ARR is: " );
+for (int p = 0; p < smooshedByteBlockARR.length; p ++) {
+	System.out.print((smooshedByteBlockARR[p] & 0xFF) + " | ");
+}
+System.out.print("\n");		
+
+LOGGER.info("expectedXorIndexChainARR ARR is: " );
+for (int p = 0; p < expectedXorIndexChainARR.length; p ++) {
+	System.out.print((expectedXorIndexChainARR[p] & 0xFF) + " | ");
+}
+System.out.print("\n");	
+
+LOGGER.info((smooshedByteBlockARR[7] & 0xFF) + " " + expectedXorIndexChainARR[15]);
+
+Assert.assertTrue((smooshedByteBlockARR[7] & 0xFF) == expectedXorIndexChainARR[15]);
+		
+		byte[] xorEightValARR = 
+				ByteManipulation.getLongAsByteArray(xorEightValL, true);		
+		
+		LOGGER.info("xorEightValARR: ");
+		for (int k = 0; k < xorEightValARR.length; k ++) {
+			System.out.print((xorEightValARR[k] & 0xFF) + " : ");
+		}
+		System.out.print("\n");	
+		
+		
 		byte[] mostlyUnXordNineToFifteenARR = new byte[7];
 		
 		for (int i = 0; i < 7; i ++) {
@@ -213,25 +248,31 @@ public class DialecticCompressionSteps extends Steps {
 					fingerprinter.applyXorChain(
 							(i + 2), 
 							xorValueChainIndexesARR, 
-							rolledBackSmooshBlockARR[0]);
-			
-			// what the xor value was when byte 15 was pushed - the processed
-			// byte 8
-			long xorEightValL = expectedXorValueChainARR[15];
-			byte[] xorEightValARR = 
-					ByteManipulation.getLongAsByteArray(xorEightValL, true);
+							rolledBackSmooshBlockARR[i]);
 			
 			byte computedOriginalByte = 
 				(byte) (mostlyUnXordNineToFifteenARR[i] ^ xorEightValARR[i]);
 			
+LOGGER.info("computedOriginalByte is: " + (computedOriginalByte & 0xFF));
+
+LOGGER.info("mostlyUnXord byte index: " + (i) + " value: " + 
+		(mostlyUnXordNineToFifteenARR[i] & 0xFF));
+
+LOGGER.info("xorEightValARR element " + i + 
+		" is " + (xorEightValARR[i] & 0xFF));
+		
+LOGGER.info("generatedByte index is: " + (i + 8));
+LOGGER.info("generatedByte ARR is: " );
+for (int p = 0; p < generatedByteARR.length; p ++) {
+	System.out.print((generatedByteARR[p] & 0xFF) + " | ");
+}
+System.out.print("\n");
+
 			Assert.assertTrue("error detected in computed "
 				+ "mostlyUnXordNineToFifteen byte array!", 
-					computedOriginalByte == generatedByteARR[i + 9]);			
+					computedOriginalByte == generatedByteARR[i + 8]);			
 			
 		}
-		
-
-
 		
 	}
 	
