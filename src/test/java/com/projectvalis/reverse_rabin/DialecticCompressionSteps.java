@@ -224,7 +224,11 @@ public class DialecticCompressionSteps extends Steps {
 	}
 	
 	
-	
+	/**
+	 * TODO: why does fingerprintFourteen have '00' appended to the head 
+	 * instead of the correct value for processed byte 8 (which is at index 1
+	 * instead of 0)?
+	 */
 	@Then("all 256 possible values for bytes 8-15 can be inserted between "
 			+ "known byte(s) 1-7 and 16.")
 	public void computeAllPossibleSolutions() {
@@ -323,6 +327,31 @@ LOGGER.info(String.format("%02X", originalByteEight) + " " +
 
 		Assert.assertTrue("error detected in computing original byte eight!", 
 				originalByteEight == generatedByteARR[7]);
+		
+		
+		
+		// now put it all together and check
+		byte[] reversedSmooshBlockARR = new byte[16];
+		
+		byte[] originalNineToFifteen = 
+				candidateNineToFifteenAL.get(matchIndexI);
+		
+		for (int i = 0; i < 7; i ++) {
+			reversedSmooshBlockARR[i] = smooshedByteBlockARR[i];
+			reversedSmooshBlockARR[i + 8] = originalNineToFifteen[i];			
+		}
+		
+		reversedSmooshBlockARR[7] = originalByteEight;
+		reversedSmooshBlockARR[15] = rolledBackSmooshBlockARR[7];
+		
+LOGGER.info(ByteManipulation.getByteArrayAsHexString(reversedSmooshBlockARR));
+LOGGER.info(ByteManipulation.getByteArrayAsHexString(generatedByteARR));
+		
+		for (int i = 0; i < 16; i ++) {
+			Assert.assertTrue("error detected in reversed smoosh block!", 
+					reversedSmooshBlockARR[i] == generatedByteARR[i]);
+		}
+		
 		
 		
 	}
