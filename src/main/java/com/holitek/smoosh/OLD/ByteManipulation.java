@@ -1,4 +1,4 @@
-package com.projectvalis.util;
+package com.holitek.smoosh.OLD;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -9,8 +9,6 @@ import org.junit.Assert;
 import org.rabinfingerprint.fingerprint.RabinFingerprintLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.projectvalis.util.rabin.RabinFingerprintLong_SmooshMod;
 
 public class ByteManipulation {
 	

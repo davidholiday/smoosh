@@ -1,4 +1,4 @@
-package com.projectvalis.reverse_rabin;
+package com.holitek.smoosh.reverse_rabin.OLD;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,9 +15,9 @@ import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.projectvalis.util.ByteManipulation;
+import com.holitek.smoosh.OLD.ByteManipulation;
+import com.holitek.smoosh.OLD.RabinFingerprintLong_SmooshMod;
 import com.projectvalis.util.TestHelper;
-import com.projectvalis.util.rabin.RabinFingerprintLong_SmooshMod;
 
 
 

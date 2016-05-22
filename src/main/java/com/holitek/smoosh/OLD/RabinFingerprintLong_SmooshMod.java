@@ -1,4 +1,4 @@
-package com.projectvalis.util.rabin;
+package com.holitek.smoosh.OLD;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +11,6 @@ import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.projectvalis.util.ByteManipulation;
 import com.projectvalis.util.TestHelper;
 
 /**

@@ -5,6 +5,8 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.holitek.smoosh.OLD.ByteManipulation;
+
 
 /**
  * methods specific to running tests only. other utilities located in 
