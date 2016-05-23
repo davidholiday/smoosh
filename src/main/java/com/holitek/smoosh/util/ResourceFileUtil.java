@@ -1,10 +1,10 @@
 package com.holitek.smoosh.util;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -103,13 +103,13 @@ public class ResourceFileUtil {
 	 */
 	public static boolean buildResourceFiles() {
 		boolean successB = true;
-		
+		int n = 8;
 				
 		for (int k = 1; k < 5; k ++) {			
 LOGGER.info("k is: " + k);				
-            List<Integer> answerL = buildSortedAnswerList(6, k);
+            List<Integer> answerL = buildSortedAnswerList(n, k);
 LOGGER.info("answerL size is: " + answerL.size());
-            boolean serializeSuccessB = serializeList(k, answerL);
+            boolean serializeSuccessB = serializeElementList(k, answerL);
             successB = (!serializeSuccessB) ? (false) : (successB);
 
 		}
@@ -118,8 +118,16 @@ LOGGER.info("answerL size is: " + answerL.size());
 	
 	
 	
+	/**
+	 * private helper method that enumerates all the possible answers to
+	 * c(n|k)
+	 * 
+	 * @param n
+	 * @param k
+	 * @return
+	 */
 	private static List<Integer> buildSortedAnswerList(int n, int k) {
-		int rangeCeilingI = (int)Math.pow(2, 8);		//31
+		int rangeCeilingI = (int)Math.pow(2, n);
 		
         List<Integer> listOfMatches = 
                 IntStream.range(0, rangeCeilingI)
@@ -290,7 +298,7 @@ LOGGER.info("answerL size is: " + answerL.size());
 	 */
 	private static List<Integer> binaryStringToOnesList(String binaryString) {
 		String formattedBinaryString = 
-				String.format("%8s", binaryString.replace(' ', '0'));
+				String.format("%8s", binaryString).replace(' ', '0');
 		
 		List<Integer> returnL = 
 				IntStream.range(0, 8)
@@ -309,30 +317,62 @@ LOGGER.info("answerL size is: " + answerL.size());
 	 * @param listToSerialize
 	 * @return
 	 */
-	private static boolean serializeList(
+	private static boolean serializeElementList(
 			int listID, List<Integer> listToSerialize) {
 		
 		boolean successB = true;
-		String fileNameS = "./src/main/resources/elementList_" + listID + ".dat";
+		
+		String fileNameS = 
+				"./src/main/resources/elementList_" + listID + ".dat";
 		
 	    try {
-	       FileOutputStream fileOutStream = new FileOutputStream(fileNameS);
+	        FileOutputStream fileOutStream = new FileOutputStream(fileNameS);
 	       
-	       ObjectOutputStream objectOutputStream = 
+	        ObjectOutputStream objectOutputStream = 
 	    		   new ObjectOutputStream(fileOutStream);
 	       
-	       objectOutputStream.writeObject(listToSerialize);
-	       objectOutputStream.close();
-	       fileOutStream.close();
-	    } catch(IOException ioe) {
-	        LOGGER.error("couldn't serialize element list!", ioe);
-	         successB = false;
+	        objectOutputStream.writeObject(listToSerialize);
+	        objectOutputStream.close();
+	        fileOutStream.close();
+	    } catch(IOException e) {
+	        LOGGER.error("couldn't serialize element list!", e);
+	        successB = false;
 	    }
 	   
 		return successB;
 	}
 	
 	
+	/**
+	 * utility method to read in the files needed for decompression, as needed.
+	 * @param listID
+	 * @return
+	 */
+	public static List<Integer> deserializeElementList (int listID) {
+		
+		List<Integer> returnL = null;
+		
+		String fileNameS = 
+				"./src/main/resources/elementList_" + listID + ".dat";
+		
+	    try {
+	        FileInputStream fileInputStream = 
+	        		new FileInputStream(fileNameS);
+	        
+	        ObjectInputStream objectInputStream = 
+	        		new ObjectInputStream(fileInputStream);
+	        
+	        returnL = (List<Integer>) objectInputStream.readObject();
+	        objectInputStream.close();
+	        fileInputStream.close();
+	    } catch(IOException e) {
+	    	LOGGER.error("couldn't de-serialize element list!", e);
+	    } catch(ClassNotFoundException e1) {
+	    	LOGGER.error("class not found error!", e1);
+	    }
+	    
+	    return returnL;
+	}
 	
 	
 }
