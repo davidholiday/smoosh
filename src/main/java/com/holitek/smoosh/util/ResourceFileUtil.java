@@ -3,7 +3,9 @@ package com.holitek.smoosh.util;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -101,41 +103,34 @@ public class ResourceFileUtil {
 	 */
 	public static boolean buildResourceFiles() {
 		boolean successB = true;
-		int rangeCeilingI = (int)Math.pow(2, 6);		//31
+		
 				
-		for (int i = 1; i < 32; i ++) {
-			
-LOGGER.info("i is: " + i);				
-			//List<List<Integer>> elementList =
-	
-            List<Integer> listOfMatches = 
-                    IntStream.range(0, rangeCeilingI)
-                             .parallel()
-                             .filter(x -> checkOnesCount(
-                            		 Integer.toBinaryString(x), i))
-                             .boxed()
-                             .collect(Collectors.toList());
-
-            
-            
-//			for (int k = 0; k < rangeCeilingI; k ++) {
-//				String valueAsBinaryS = Integer.toBinaryString(k);
-//		
-//				if (checkOnesCount(valueAsBinaryS, i)) {
-//					
-//					List<Integer> valueL = 
-//							binaryStringToOnesList(valueAsBinaryS);
-//					
-//					elementList.add(valueL);
-//				}
-//						
-//			}
-			
-            boolean serializeSuccessB = serializeList(i, elementList);
+		for (int k = 1; k < 5; k ++) {			
+LOGGER.info("k is: " + k);				
+            List<Integer> answerL = buildSortedAnswerList(6, k);
+LOGGER.info("answerL size is: " + answerL.size());
+            boolean serializeSuccessB = serializeList(k, answerL);
             successB = (!serializeSuccessB) ? (false) : (successB);
+
 		}
-			
 		return successB;
+	}
+	
+	
+	
+	private static List<Integer> buildSortedAnswerList(int n, int k) {
+		int rangeCeilingI = (int)Math.pow(2, 8);		//31
+		
+        List<Integer> listOfMatches = 
+                IntStream.range(0, rangeCeilingI)
+                         .parallel()
+                         .filter(x -> checkOnesCount(
+                        		 Integer.toBinaryString(x), k))
+                         .boxed()
+                         .collect(Collectors.toList());
+
+        Collections.sort(listOfMatches);
+        return listOfMatches;
 	}
 	
 	
@@ -315,10 +310,10 @@ LOGGER.info("i is: " + i);
 	 * @return
 	 */
 	private static boolean serializeList(
-			int listID, List<List<Integer>> listToSerialize) {
+			int listID, List<Integer> listToSerialize) {
 		
 		boolean successB = true;
-		String fileNameS = "/data/elementList_" + listID + ".dat";
+		String fileNameS = "./src/main/resources/elementList_" + listID + ".dat";
 		
 	    try {
 	       FileOutputStream fileOutStream = new FileOutputStream(fileNameS);
