@@ -1,10 +1,16 @@
 package com.holitek.smoosh.util;
 
-import java.util.HashMap;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import junit.framework.Assert;
 
@@ -16,6 +22,9 @@ import junit.framework.Assert;
  */
 public class ResourceFileUtil {
 
+	public static Logger LOGGER = 
+			LoggerFactory.getLogger(ResourceFileUtil.class);
+	
 	// every answer for c(31|k) where arr[x] = c(31|x+1)
 	// this arrays is 30 elements long because we can assume the answer to
 	// c(31/0)
@@ -91,31 +100,41 @@ public class ResourceFileUtil {
 	 * @return
 	 */
 	public static boolean buildResourceFiles() {
-		boolean successB = false;
-		
-		Map<Integer, List<Integer>> tableElementMap = 
-				new HashMap<Integer, List<Integer>>();
-				
-		int rangeCeilingI = (int)Math.pow(31, 2);		
+		boolean successB = true;
+		int rangeCeilingI = (int)Math.pow(2, 6);		//31
 				
 		for (int i = 1; i < 32; i ++) {
 			
-			for (int k = 0; k < rangeCeilingI; k ++) {
-				String valueAsBinaryS = Integer.toBinaryString(0);
-				
-				if (checkOnesCount(valueAsBinaryS, i)) {
-					tableElementMap.put(key, value)
-				}
-				
-				
-			}
+LOGGER.info("i is: " + i);				
+			//List<List<Integer>> elementList =
+	
+            List<Integer> listOfMatches = 
+                    IntStream.range(0, rangeCeilingI)
+                             .parallel()
+                             .filter(x -> checkOnesCount(
+                            		 Integer.toBinaryString(x), i))
+                             .boxed()
+                             .collect(Collectors.toList());
+
+            
+            
+//			for (int k = 0; k < rangeCeilingI; k ++) {
+//				String valueAsBinaryS = Integer.toBinaryString(k);
+//		
+//				if (checkOnesCount(valueAsBinaryS, i)) {
+//					
+//					List<Integer> valueL = 
+//							binaryStringToOnesList(valueAsBinaryS);
+//					
+//					elementList.add(valueL);
+//				}
+//						
+//			}
 			
-// serialize da file
-			
+            boolean serializeSuccessB = serializeList(i, elementList);
+            successB = (!serializeSuccessB) ? (false) : (successB);
 		}
-		
-		
-		
+			
 		return successB;
 	}
 	
@@ -285,6 +304,39 @@ public class ResourceFileUtil {
 		
 		return returnL;
 	}
+	
+	
+	
+	/**
+	 * utility method to create the element list files needed for decompression
+	 * 
+	 * @param listID
+	 * @param listToSerialize
+	 * @return
+	 */
+	private static boolean serializeList(
+			int listID, List<List<Integer>> listToSerialize) {
+		
+		boolean successB = true;
+		String fileNameS = "/data/elementList_" + listID + ".dat";
+		
+	    try {
+	       FileOutputStream fileOutStream = new FileOutputStream(fileNameS);
+	       
+	       ObjectOutputStream objectOutputStream = 
+	    		   new ObjectOutputStream(fileOutStream);
+	       
+	       objectOutputStream.writeObject(listToSerialize);
+	       objectOutputStream.close();
+	       fileOutStream.close();
+	    } catch(IOException ioe) {
+	        LOGGER.error("couldn't serialize element list!", ioe);
+	         successB = false;
+	    }
+	   
+		return successB;
+	}
+	
 	
 	
 	
