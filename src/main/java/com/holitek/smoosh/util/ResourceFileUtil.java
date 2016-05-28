@@ -98,14 +98,16 @@ public class ResourceFileUtil {
 
 	
 	/**
+	 * TODO replace array lists with byte arrays read from streams
+	 * 
 	 * creates the resource files
 	 * @return
 	 */
 	public static boolean buildResourceFiles() {
 		boolean successB = true;
-		int n = 8;
+		int n = 31;
 				
-		for (int k = 1; k < 5; k ++) {			
+		for (int k = 1; k < 32; k ++) {			
 LOGGER.info("k is: " + k);				
             List<Integer> answerL = buildSortedAnswerList(n, k);
 LOGGER.info("answerL size is: " + answerL.size());
