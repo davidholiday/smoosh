@@ -1,4 +1,4 @@
-package com.holitek.smoosh.reverse_rabin.OLD;
+package com.projectvalis.reverse_rabin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,9 +15,9 @@ import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.holitek.smoosh.OLD.ByteManipulation;
-import com.holitek.smoosh.OLD.RabinFingerprintLong_SmooshMod;
+import com.projectvalis.util.ByteManipulation;
 import com.projectvalis.util.TestHelper;
+import com.projectvalis.util.rabin.RabinFingerprintLong_SmooshMod;
 
 
 
@@ -300,7 +300,9 @@ Assert.assertTrue(7 == fingerprintedFifteenARR.length);
 		// head of the fingerprint, we can roll it back to its original state.
 		long eightAppendedToFingerprintFifteenL = 
 				ByteManipulation.appendByteToHead(
-						(byte)matchIndexI, fingerprintedFifteenL);
+						(byte)matchIndexI, 
+						fingerprintedFifteenL,
+						fingerprinter.getShiftVal());
 		
 		long fingerprintFourteenL = 
 			ByteManipulation.removeTailByte(eightAppendedToFingerprintFifteenL);

@@ -1,4 +1,4 @@
-package com.holitek.smoosh.jbehave;
+package com.projectvalis.jbehave;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +17,10 @@ import org.jbehave.core.steps.InstanceStepsFactory;
 import org.jbehave.core.steps.Steps;
 import org.junit.runner.RunWith;
 
-import com.holitek.smoosh.reverse_rabin.OLD.DialecticCompressionSteps;
-import com.holitek.smoosh.reverse_rabin.OLD.ReverseRabinSteps;
+import com.projectvalis.reverse_rabin.DialecticCompressionSteps;
+import com.projectvalis.reverse_rabin.DoubleHashSteps;
+import com.projectvalis.reverse_rabin.FurlSteps;
+import com.projectvalis.reverse_rabin.ReverseRabinSteps;
 
 import de.codecentric.jbehave.junit.monitoring.JUnitReportingRunner;
 
@@ -49,9 +51,10 @@ public class JBehaveRunner_Test extends JUnitStories {
     @Override
     public InjectableStepsFactory stepsFactory() {
         ArrayList<Steps> stepFileList = new ArrayList<Steps>();
+        //stepFileList.add(new FurlSteps());
         //stepFileList.add(new ReverseRabinSteps());
         //stepFileList.add(new DialecticCompressionSteps());
-
+        stepFileList.add(new DoubleHashSteps());
         return new InstanceStepsFactory(configuration(), stepFileList);       
     }
 

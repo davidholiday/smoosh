@@ -1,4 +1,4 @@
-package com.holitek.smoosh.reverse_rabin.OLD;
+package com.projectvalis.reverse_rabin;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -18,9 +18,9 @@ import org.rabinfingerprint.polynomial.Polynomial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.holitek.smoosh.OLD.ByteManipulation;
-import com.holitek.smoosh.OLD.RabinFingerprintLong_SmooshMod;
+import com.projectvalis.util.ByteManipulation;
 import com.projectvalis.util.TestHelper;
+import com.projectvalis.util.rabin.RabinFingerprintLong_SmooshMod;
 
 /**
  * BDD step file for the 'can we reverse a rabin hash' experiment
@@ -41,6 +41,9 @@ public class ReverseRabinSteps extends Steps {
 	private List<Long> allXorPossibilitiesAL;
 
 	
+	private byte[] fingerprintHeadsARR;
+	
+	
 	
 	@BeforeScenario
 	public void setup() {
@@ -56,7 +59,9 @@ public class ReverseRabinSteps extends Steps {
 	@Given("an array of $numBytesI bytes")
 	public void createByteArray(@Named("numBytesI") int numBytesI) {
 		generatedByteARR = TestHelper.createByteArray(numBytesI);
+//generatedByteARR[15] = generatedByteARR[6];
 	}
+	
 
 	
 	
@@ -89,6 +94,13 @@ public class ReverseRabinSteps extends Steps {
 		fingerprinter.pushBytes(generatedByteARR);
 	}
 	
+
+	
+	@When("the byte array is fingerprinted with heads saved")
+	public void fingerprintByteArraySaveHeads() {
+	    fingerprintHeadsARR = fingerprinter.pushAndSaveHeads(generatedByteARR);
+	    //fingerprintHeadsARR = fingerprinter.pushAndXorByteSixAndSaveHeads(generatedByteARR);
+	}
 	
 	
 
@@ -122,7 +134,7 @@ public class ReverseRabinSteps extends Steps {
 		xordFingerprintAL = new ArrayList<Long>();
 		appendedXordFingerprintAL = new ArrayList<Long>();
 
-		for (int i = 0; i < polynomialAL.size(); i++) {
+		for (int i = 0; i < /*polynomialAL.size();*/ 256; i++) {
 			long xordFingerprintL = polynomialAL.get(i) ^ fingerprintL;
 			
 			xordFingerprintL = 
@@ -131,7 +143,7 @@ public class ReverseRabinSteps extends Steps {
 			xordFingerprintAL.add(xordFingerprintL);
 			
 			long appendedXordFingerprintL = 
-				ByteManipulation.appendByteToHead(i, xordFingerprintAL.get(i));
+				ByteManipulation.appendByteToHead(i, xordFingerprintAL.get(i), fingerprinter.getShiftVal());
 			
 			appendedXordFingerprintAL.add(appendedXordFingerprintL);
 		}
@@ -146,6 +158,7 @@ public class ReverseRabinSteps extends Steps {
 		int matchCountI = 0;
 		boolean matchFoundB = false;	
 		int actualMatchIndexI = -1;
+		int actualMatchCountI = 0;
 		long fingerprintL = fingerprinter.getFingerprintLong();
 		LOGGER.debug("fingerprintL was: " + fingerprintL);
 		
@@ -182,8 +195,8 @@ public class ReverseRabinSteps extends Steps {
 //				fingerprinter.pushBytes(answerCandidateByteARR);
 //				LOGGER.info(fingerprinter.getFingerprintLong() + "\n");
 //
-//				LOGGER.info("original and answer candidate byte arrays are: "
-//						+ Arrays.toString(generatedByteARR) + " "
+//				LOGGER.info("original and answer candidate byte arrays are: \n"
+//						+ Arrays.toString(generatedByteARR) + " \n"
 //						+ Arrays.toString(answerCandidateByteARR));
 //				LOGGER.info("************************************************");
 
@@ -200,6 +213,7 @@ public class ReverseRabinSteps extends Steps {
 					matchFoundB = tempMatchB;
 					if (matchFoundB) {
 						actualMatchIndexI = i;
+						actualMatchCountI += 1;
 					}
 				}
 
@@ -208,6 +222,7 @@ public class ReverseRabinSteps extends Steps {
 		}
 
 		LOGGER.info("match count is: " + matchCountI);
+		LOGGER.info("actual match count is: " + actualMatchCountI);
 		LOGGER.info("actual match index is: " + actualMatchIndexI);
 
 		Assert.assertTrue(
@@ -218,7 +233,81 @@ public class ReverseRabinSteps extends Steps {
 
 
 
-	
+	@Then("it is possible to suss out what the original bytes were")
+	public void backThatAssUp() {
+	    long fingerprintLocalL = fingerprinter.getFingerprintLong();
+	    long fingerprintOriginalL = fingerprintLocalL;
+	    LOGGER.info("fingerprint is: " + String.format("%X", fingerprintLocalL));
+	    LOGGER.info("original bytes was: " + ByteManipulation.getByteArrayAsHexString(generatedByteARR));
+	    LOGGER.info("FINGERPRINT heads is: " + Arrays.toString(fingerprintHeadsARR));
+	    
+        for (int i = fingerprintHeadsARR.length - 1; i > 5; i --) {  
+        //for (int i = 5; i < fingerprintHeadsARR.length; i ++) {   
+	        int pushTableIndex = fingerprintHeadsARR[i] & 0xFF;
+	        long xorValL = fingerprinter.getPushTable()[pushTableIndex];
+	        
+	        //LOGGER.info("pushTable index and value are: "
+	        //            + String.format("%X", pushTableIndex) + " "
+	        //            + String.format("%X", xorValL));
+	        
+	        fingerprintLocalL = xorValL ^ fingerprintLocalL;
+	        
+	        LOGGER.info("fingerprint with -pre-tail-snip is: " + String.format("%X", fingerprintLocalL));
+	        
+	        fingerprintLocalL = ByteManipulation.removeTailByte(fingerprintLocalL);
+            LOGGER.info("FINGERPRINT IS NOW: " + String.format("%X", fingerprintLocalL));
+	    }
+	    
+
+	    
+	    
+        LOGGER.info("*** NOW FLIPPING BIT IN THE INPUT DATA ***");
+        LOGGER.info("generated byte array was: " + ByteManipulation.getByteArrayAsHexString(generatedByteARR));
+        
+        // is HObit 1?     
+        int index = 0;
+        int fu = generatedByteARR[index] & 0xFF;
+        LOGGER.info("xor at push index: " + generatedByteARR[index] + "is: " + String.format("%X", fingerprinter.getPushTable()[fu]));
+        if ( ( (  generatedByteARR[index] >>> 7 ) & 1 ) ==1 ) {
+            generatedByteARR[index] = (byte) (generatedByteARR[index] & 0x00/*0xEF*/);
+        } else {
+            generatedByteARR[index] = (byte) (generatedByteARR[index] | 0xFF/*0x80*/);
+        }
+        fu = generatedByteARR[index] & 0xFF;
+        LOGGER.info("xor at push index: " + generatedByteARR[index] + "is now: " + String.format("%X", fingerprinter.getPushTable()[fu]));
+        
+        
+        
+        LOGGER.info("generated byte array is:  " + ByteManipulation.getByteArrayAsHexString(generatedByteARR));
+
+        LOGGER.info("*** updating fingerprint heads list and reseting fingerprint to original***");
+        fingerprinter.reset();
+        //fingerprintByteArraySaveHeads();
+        fingerprintHeadsARR = fingerprinter.pushAndSaveHeads(generatedByteARR);
+        fingerprintLocalL = fingerprintOriginalL;
+        
+        LOGGER.info("fingerprint heads is now:  " + Arrays.toString(fingerprintHeadsARR));
+        LOGGER.info("FINGERPRINT IS: " + String.format("%X", fingerprintLocalL));
+        for (int i = fingerprintHeadsARR.length - 1; i > 5; i --) {  
+        //for (int i = 5; i < fingerprintHeadsARR.length; i ++) {
+             int pushTableIndex = fingerprintHeadsARR[i];
+             long xorValL = fingerprinter.getPushTable()[pushTableIndex & 0xFF];
+                
+             //LOGGER.info("pushTable index and value are: "
+             //            + String.format("%X", pushTableIndex) + " "
+             //            + String.format("%X", xorValL));
+                
+             fingerprintLocalL = xorValL ^ fingerprintLocalL;
+                
+             LOGGER.info("fingerprint with -pre-tail-snip is: " + String.format("%X", fingerprintLocalL));
+                
+             fingerprintLocalL = ByteManipulation.removeTailByte(fingerprintLocalL);
+             LOGGER.info("FINGERPRINT IS NOW: " + String.format("%X", fingerprintLocalL));
+         }	    
+	    
+	    
+	    
+	}
 
 
 
